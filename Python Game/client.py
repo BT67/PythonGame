@@ -2,9 +2,6 @@ import socket
 import threading
 import datetime
 from math import radians
-
-import numpy as np
-
 from ursina import *
 from ursina.prefabs.first_person_controller import FirstPersonController
 from network import Network
@@ -12,9 +9,11 @@ from network import Network
 SERVER_HOST = "127.0.0.1"
 SERVER_PORT = 8081
 
-TURN_SPEED = 1
+TURN_SPEED = 0.25
 ZOOM_SPEED = 0.5
-MOVE_SPEED = 0.2
+MOVE_SPEED_ACC = 0.016
+MOVE_SPEED_DECC = 0.015
+MAX_SPEED = 0.035
 
 app = Ursina()
 
@@ -70,23 +69,41 @@ def update():
     player_camera.rotation_y = player_camera.rotation_y % 360
     player_model.rotation_y = player_model.rotation_y % 360
     player_camera.y = player_model.y + 0.5
-    move_direction = 0
-    move_speed = 0
+    move_speed = player_model.move_speed
+    move_speed -= MOVE_SPEED_DECC
+    move_direction = player_model.rotation_y
+    if move_speed <= 0:
+        move_speed = 0
+        player_model.reverse = 0
     if held_keys['w'] | held_keys['up arrow']:
-        move_direction = player_model.rotation_y
-        move_speed = MOVE_SPEED
+        move_speed += MOVE_SPEED_ACC
+        player_model.reverse = 0
     if held_keys['a'] | held_keys['left arrow']:
-        player_model.rotation_y -= TURN_SPEED
+        if player_model.reverse:
+            player_model.pivot_y = - 3
+            player_model.rotation_y += TURN_SPEED
+        else:
+            player_model.pivot_y = 3
+            player_model.rotation_y -= TURN_SPEED
     if held_keys['s'] | held_keys['down arrow']:
-        move_direction = 180 + player_model.rotation_y
-        move_speed = MOVE_SPEED
+        player_model.reverse = 1
+        move_speed += MOVE_SPEED_ACC
     if held_keys['d'] | held_keys['right arrow']:
-        player_model.rotation_y += TURN_SPEED
+        if player_model.reverse:
+            player_model.pivot_y = 3
+            player_model.rotation_y -= TURN_SPEED
+        else:
+            player_model.pivot_y = - 3
+            player_model.rotation_y += TURN_SPEED
+    if move_speed > MAX_SPEED:
+        move_speed = MAX_SPEED
+    if player_model.reverse:
+        move_direction = 180 + player_model.rotation_y
     player_model.z += cos(radians(move_direction)) * move_speed
     player_model.x += sin(radians(move_direction)) * move_speed
-    # player_camera.pivot_z = player_model.z
     player_camera.z = player_model.z
     player_camera.x = player_model.x
+    player_model.move_speed = move_speed
 
 
 ground = Entity(
@@ -117,8 +134,10 @@ player_model = Entity(
     texture="white_cube"
 )
 
-camera.z = -5
+player_model.move_speed = 0
+player_model.reverse = 0
 
+camera.z = -5
 
 if __name__ == "__main__":
     main()
