@@ -1,6 +1,10 @@
 import socket
 import threading
 import datetime
+from math import radians
+
+import numpy as np
+
 from ursina import *
 from ursina.prefabs.first_person_controller import FirstPersonController
 from network import Network
@@ -8,12 +12,15 @@ from network import Network
 SERVER_HOST = "127.0.0.1"
 SERVER_PORT = 8081
 
-CAMERA_SPEED = 0.2
+TURN_SPEED = 1
 ZOOM_SPEED = 0.5
+MOVE_SPEED = 0.2
 
 app = Ursina()
 
 Sky()
+
+window.fps_counter.enabled = False
 
 
 def timeNow():
@@ -53,28 +60,65 @@ def listen():
             continue
 
 
-def update():
-    print()
-
-
 def main():
     packet_thread = threading.Thread(target=listen, daemon=True)
     packet_thread.start()
-    game_thread = threading.Thread(target=update, daemon=True)
-    game_thread.start()
     app.run()
 
 
-player = FirstPersonController(model='cube', color=color.orange, y=2, origin_y=-.5, speed=8, collider='box')
+def update():
+    player_camera.rotation_y = player_camera.rotation_y % 360
+    player_model.rotation_y = player_model.rotation_y % 360
+    player_camera.y = player_model.y + 1
+    move_direction = 0
+    move_speed = 0
+    if held_keys['w'] | held_keys['up arrow']:
+        move_direction = player_model.rotation_y
+        move_speed = MOVE_SPEED
+    if held_keys['a'] | held_keys['left arrow']:
+        player_model.rotation_y -= TURN_SPEED
+    if held_keys['s'] | held_keys['down arrow']:
+        move_direction = 180 + player_model.rotation_y
+        move_speed = - MOVE_SPEED
+    if held_keys['d'] | held_keys['right arrow']:
+        player_model.rotation_y += TURN_SPEED
+    player_model.z += cos(radians(move_direction)) * move_speed
+    player_model.x += sin(radians(move_direction)) * move_speed
+    player_camera.pivot_z = player_model.z
+    player_camera.z = player_model.z - 5
+    player_camera.x = player_model.x
+    player_camera.look_at(player_model)
+
 
 ground = Entity(
     model="plane",
     scale=(100, 1, 100),
-    color=color.gray,
+    position=(0, 0, 0),
+    color=color.light_gray,
     texture="white_cube",
     texture_scale=(100, 100),
     collider="box"
 )
+
+player_camera = FirstPersonController(
+    origin_y=-.5,
+    model="cube",
+    collider="box",
+    scale=(1, 1, 1),
+    visible=False,
+    speed=1
+)
+
+# z=8,
+player_model = Entity(
+    model="tier1.fbx",
+    y=0.01,
+    scale=(0.005, 0.005, 0.005),
+    color=color.dark_gray,
+    collider="box",
+    texture="white_cube"
+)
+
 
 if __name__ == "__main__":
     main()
