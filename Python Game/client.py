@@ -1,8 +1,8 @@
 import socket
 import threading
 import datetime
-from player import Player
 from ursina import *
+from ursina.prefabs.first_person_controller import FirstPersonController
 from network import Network
 
 SERVER_HOST = "127.0.0.1"
@@ -13,8 +13,7 @@ ZOOM_SPEED = 0.5
 
 app = Ursina()
 
-entities = {}
-indicators = {}
+Sky()
 
 
 def timeNow():
@@ -55,32 +54,7 @@ def listen():
 
 
 def update():
-    if held_keys['w'] | held_keys['up arrow']:
-        camera.y += CAMERA_SPEED
-    if held_keys['a'] | held_keys['left arrow']:
-        camera.x -= CAMERA_SPEED
-    if held_keys['s'] | held_keys['down arrow']:
-        camera.y -= CAMERA_SPEED
-    if held_keys['d'] | held_keys['right arrow']:
-        camera.x += CAMERA_SPEED
-    for entity in entities:
-        if entities[entity].focused:
-            indicators["test_selection_indicator"].visible = True
-        else:
-            indicators["test_selection_indicator"].visible = False
-
-
-def input(key):
-    if key == Keys.scroll_up:
-        camera.z += ZOOM_SPEED
-        camera.y += ZOOM_SPEED
-    if key == Keys.scroll_down:
-        camera.z -= ZOOM_SPEED
-        camera.y -= ZOOM_SPEED
-    if key == Keys.left_mouse_down and not mouse.hovered_entity:
-        for entity in entities:
-            entities[entity].set_unfocused()
-
+    print()
 
 
 def main():
@@ -91,27 +65,16 @@ def main():
     app.run()
 
 
-test_entity = Player()
-test_entity.model = "cube"
-test_entity.position = (0, 0, 0)
-test_entity.color = color.light_gray
-test_entity.texture = "white_cube"
-test_entity.collider = "box"
-test_entity.name = "test"
+player = FirstPersonController(model='cube', color=color.orange, y=2, origin_y=-.5, speed=8, collider='box')
 
-selection_indicator = Entity(
-    model="sphere",
-    scale=(0.5, 0.5, 0.5),
-    position=(0, 0, 2),
-    color=color.green,
-    name="test_selection_indicator",
-    visible=False
+ground = Entity(
+    model="plane",
+    scale=(100, 1, 100),
+    color=color.gray,
+    texture="white_cube",
+    texture_scale=(100, 100),
+    collider="box"
 )
-
-entities.update({test_entity.name: test_entity})
-indicators.update({selection_indicator.name: selection_indicator})
-
-camera.rotation_x = -30
 
 if __name__ == "__main__":
     main()
