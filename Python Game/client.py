@@ -11,9 +11,12 @@ SERVER_PORT = 8081
 
 TURN_SPEED = 0.25
 ZOOM_SPEED = 0.5
+MAX_ZOOM_IN = 0
+MAX_ZOOM_OUT = -10
 MOVE_SPEED_ACC = 0.016
 MOVE_SPEED_DECC = 0.015
 MAX_SPEED = 0.035
+MAX_LOOK_UP = 45
 
 app = Ursina()
 
@@ -68,7 +71,9 @@ def main():
 def update():
     player_camera.rotation_y = player_camera.rotation_y % 360
     player_model.rotation_y = player_model.rotation_y % 360
-    player_camera.y = player_model.y + 0.5
+    if camera.rotation_x > MAX_LOOK_UP:
+        camera.rotation_x = MAX_LOOK_UP
+    player_camera.y = player_model.y
     move_speed = player_model.move_speed
     move_speed -= MOVE_SPEED_DECC
     move_direction = player_model.rotation_y
@@ -104,6 +109,16 @@ def update():
     player_camera.z = player_model.z
     player_camera.x = player_model.x
     player_model.move_speed = move_speed
+
+def input(key):
+    if key == Keys.scroll_up:
+        camera.z += ZOOM_SPEED
+        if camera.z > MAX_ZOOM_IN:
+            camera.z = MAX_ZOOM_IN
+    if key == Keys.scroll_down:
+        camera.z -= ZOOM_SPEED
+        if camera.z < MAX_ZOOM_OUT:
+            camera.z = MAX_ZOOM_OUT
 
 
 ground = Entity(
