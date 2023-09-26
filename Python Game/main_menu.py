@@ -53,7 +53,7 @@ class MainMenu(Entity):
             highlight_color=themes[THEME]["ui_button"],
             parent=self.init_menu,
             x=-0.15,
-            y=-0.15,
+            y=-0.1,
             scale_x=0.2,
             scale_y=0.08,
         )
@@ -65,38 +65,45 @@ class MainMenu(Entity):
             highlight_color=themes[THEME]["ui_button"],
             parent=self.init_menu,
             x=0.15,
-            y=-0.15,
+            y=-0.1,
             scale_x=0.2,
             scale_y=0.08,
         )
         btn_register_init.on_click = self.btn_register_init_event
 
-        # Login Menu Buttons
+        # Login Menu
+
+        login_menu_back = Entity(
+            model="cube",
+            color=themes[THEME]["ui_background"],
+            scale_x=0.6,
+            scale_y=0.5,
+            position_z=1,
+            parent=self.login_menu
+        )
 
         lbl_username = Text(
             text=lang_config[LANGUAGE]["username"],
-            x=-0.15,
+            x=-0.25,
             y=0.2,
             parent=self.login_menu
         )
 
         lbl_password = Text(
             text=lang_config[LANGUAGE]["password"],
-            x=-0.15,
+            x=-0.25,
             y=0.1,
             parent=self.login_menu
         )
 
         txt_username = InputField(
             color=color.black,
-            x=-0.15,
             y=0.15,
             parent=self.login_menu
         )
 
         txt_password = InputField(
             color=color.black,
-            x=-0.15,
             y=0.05,
             parent=self.login_menu
         )
@@ -128,45 +135,50 @@ class MainMenu(Entity):
 
         # Register Menu Buttons
 
+        register_menu_back = Entity(
+            model="cube",
+            color=themes[THEME]["ui_background"],
+            scale_x=0.6,
+            scale_y=0.6,
+            position_z=1,
+            parent=self.register_menu
+        )
+
         lbl_username = Text(
             text=lang_config[LANGUAGE]["username"],
-            x=-0.15,
-            y=0.3,
+            x=-0.25,
+            y=0.25,
             parent=self.register_menu
         )
 
         lbl_password = Text(
             text=lang_config[LANGUAGE]["password"],
-            x=-0.15,
-            y=0.2,
+            x=-0.25,
+            y=0.15,
             parent=self.register_menu
         )
 
         lbl_email = Text(
             text=lang_config[LANGUAGE]["email"],
-            x=-0.15,
-            y=0.1,
+            x=-0.25,
+            y=0.05,
             parent=self.register_menu
         )
 
         txt_username = InputField(
             color=color.black,
-            x=-0.15,
-            y=0.25,
+            y=0.2,
             parent=self.register_menu
         )
 
         txt_password = InputField(
             color=color.black,
-            x=-0.15,
-            y=0.15,
+            y=0.1,
             parent=self.register_menu
         )
 
         txt_email = InputField(
             color=color.black,
-            x=-0.15,
-            y=0.05,
             parent=self.register_menu
         )
 
@@ -176,7 +188,7 @@ class MainMenu(Entity):
             highlight_color=themes[THEME]["ui_button"],
             parent=self.register_menu,
             x=-0.15,
-            y=-0.15,
+            y=-0.2,
             scale_x=0.2,
             scale_y=0.08,
             onclick=Func(self.btn_register_event)
@@ -189,7 +201,7 @@ class MainMenu(Entity):
             highlight_color=themes[THEME]["ui_button"],
             parent=self.register_menu,
             x=0.15,
-            y=-0.15,
+            y=-0.2,
             scale_x=0.2,
             scale_y=0.08,
         )
