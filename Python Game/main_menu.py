@@ -1,3 +1,4 @@
+import psycopg2
 from ursina import *
 import os
 from lang_config import en, lang_config
@@ -107,17 +108,36 @@ class MainMenu(Entity):
             parent=self.login_menu
         )
 
-        txt_username = InputField(
+        txt_username_login = InputField(
             color=color.black,
             y=0.15,
             parent=self.login_menu
         )
 
-        txt_password = InputField(
+        txt_password_login = InputField(
             color=color.black,
             y=0.05,
             parent=self.login_menu
         )
+
+        def btn_login_event():
+            connection = psycopg2.connect(
+                host="127.0.0.1",
+                database="postgres",
+                user="postgres",
+                password="root"
+            )
+            query = """SELECT * from public.python_users WHERE username = %s AND password = %s AND online_status = false;"""
+            values = [
+                txt_username_login.text,
+                txt_password_login.text
+            ]
+            cursor = connection.cursor()
+            cursor.execute(query, values)
+            row = cursor.fetchone()
+            print(str(row))
+            cursor.close()
+            connection.close()
 
         btn_login = Button(
             text=lang_config[LANGUAGE]["login"],
@@ -129,7 +149,7 @@ class MainMenu(Entity):
             scale_x=0.2,
             scale_y=0.08,
         )
-        btn_login.on_click = self.btn_login_event
+        btn_login.on_click = btn_login_event
 
         btn_back_login = Button(
             text=lang_config[LANGUAGE]["return"],
@@ -176,22 +196,41 @@ class MainMenu(Entity):
             parent=self.register_menu
         )
 
-        txt_username = InputField(
+        txt_username_register = InputField(
             color=color.black,
             y=0.2,
             parent=self.register_menu
         )
 
-        txt_password = InputField(
+        txt_password_register = InputField(
             color=color.black,
             y=0.1,
             parent=self.register_menu
         )
 
-        txt_email = InputField(
+        txt_email_register = InputField(
             color=color.black,
             parent=self.register_menu
         )
+
+        def btn_register_event():
+            connection = psycopg2.connect(
+                host="127.0.0.1",
+                database="postgres",
+                user="postgres",
+                password="root"
+            )
+            query = """INSERT INTO public.python_users(username, password, email, online_status, current_client) VALUES(%s,%s,%s,false,null);"""
+            values = [
+                txt_username_register.text,
+                txt_password_register.text,
+                txt_email_register.text,
+            ]
+            cursor = connection.cursor()
+            cursor.execute(query, values)
+            connection.commit()
+            cursor.close()
+            connection.close()
 
         btn_register = Button(
             text=lang_config[LANGUAGE]["register"],
@@ -202,9 +241,8 @@ class MainMenu(Entity):
             y=-0.2,
             scale_x=0.2,
             scale_y=0.08,
-            onclick=Func(self.btn_register_event)
         )
-        btn_register.on_click = self.btn_register_event
+        btn_register.on_click = btn_register_event
 
         btn_back_register = Button(
             text=lang_config[LANGUAGE]["return"],
@@ -228,9 +266,6 @@ class MainMenu(Entity):
 
     def btn_login_event(self):
         print("login event")
-
-    def btn_register_event(self):
-        print("register event")
 
     def btn_quit_event(self):
         quit()

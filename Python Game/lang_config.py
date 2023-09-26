@@ -1,4 +1,3 @@
-
 lang_config = {}
 
 en = {
@@ -8,10 +7,10 @@ en = {
     "login": "LOGIN",
     "logout": "LOGOUT",
     "register": "REGISTER",
-    "username": "USERNAME",
-    "password": "PASSWORD",
-    "email": "EMAIL",
-    "return" : "RETURN"
+    "username": "USERNAME:",
+    "password": "PASSWORD:",
+    "email": "EMAIL:",
+    "return": "RETURN"
 }
 
 lang_config["english"] = en
