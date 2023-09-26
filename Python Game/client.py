@@ -2,6 +2,8 @@ import socket
 import threading
 import datetime
 from math import radians
+
+import psycopg2
 from ursina import *
 from ursina.prefabs.first_person_controller import FirstPersonController
 from network import Network
@@ -158,6 +160,13 @@ player_model.reverse = 0
 main_menu = MainMenu(LANGUAGE="english", THEME="default")
 player_model.enabled = False
 player_camera.enabled = False
+
+connection = psycopg2.connect(
+    host="127.0.0.1",
+    database="postgres",
+    user="postgres",
+    password="root"
+)
 
 if __name__ == "__main__":
     main()

@@ -10,7 +10,8 @@ en = {
     "register": "REGISTER",
     "username": "USERNAME",
     "password": "PASSWORD",
-    "email": "EMAIL"
+    "email": "EMAIL",
+    "return" : "RETURN"
 }
 
 lang_config["english"] = en
