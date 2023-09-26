@@ -1,10 +1,16 @@
-en = {}
-en.quit = "QUIT"
-en.yes = "YES"
-en.no = "NO"
-en.login = "LOGIN"
-en.logout = "LOGOUT"
-en.register = "REGISTER"
-en.username = "USERNAME"
-en.password = "PASSWORD"
-en.email = "EMAIL"
+
+lang_config = {}
+
+en = {
+    "quit": "QUIT",
+    "yes": "YES",
+    "no": "NO",
+    "login": "LOGIN",
+    "logout": "LOGOUT",
+    "register": "REGISTER",
+    "username": "USERNAME",
+    "password": "PASSWORD",
+    "email": "EMAIL"
+}
+
+lang_config["english"] = en

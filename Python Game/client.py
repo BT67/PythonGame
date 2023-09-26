@@ -5,6 +5,7 @@ from math import radians
 from ursina import *
 from ursina.prefabs.first_person_controller import FirstPersonController
 from network import Network
+from main_menu import MainMenu
 
 SERVER_HOST = "127.0.0.1"
 SERVER_PORT = 8081
@@ -152,7 +153,11 @@ player_model = Entity(
 player_model.move_speed = 0
 player_model.reverse = 0
 
-camera.z = -5
+#camera.z = -5
+
+main_menu = MainMenu(LANGUAGE="english", THEME="default")
+player_model.enabled = False
+player_camera.enabled = False
 
 if __name__ == "__main__":
     main()
