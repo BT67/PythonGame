@@ -71,6 +71,17 @@ class MainMenu(Entity):
         )
         btn_register_init.on_click = self.btn_register_init_event
 
+        btn_quit_init = Button(
+            text=lang_config[LANGUAGE]["quit"],
+            color=themes[THEME]["ui_button"],
+            highlight_color=themes[THEME]["ui_button"],
+            parent=self.init_menu,
+            y=-0.2,
+            scale_x=0.2,
+            scale_y=0.08,
+        )
+        btn_quit_init.on_click = self.btn_quit_event
+
         # Login Menu
 
         login_menu_back = Entity(
@@ -220,6 +231,9 @@ class MainMenu(Entity):
 
     def btn_register_event(self):
         print("register event")
+
+    def btn_quit_event(self):
+        quit()
 
     def btn_back_event(self):
         if self.login_menu.enabled:
