@@ -107,8 +107,8 @@ def update():
         move_speed = MAX_SPEED
     if player_model.reverse:
         move_direction = 180 + player_model.rotation_y
-    player_model.z += cos(radians(move_direction)) * move_speed
-    player_model.x += sin(radians(move_direction)) * move_speed
+    #player_model.z += cos(radians(move_direction)) * move_speed
+    #player_model.x += sin(radians(move_direction)) * move_speed
     player_camera.z = player_model.z
     player_camera.x = player_model.x
     player_model.move_speed = move_speed
