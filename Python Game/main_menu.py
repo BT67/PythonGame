@@ -131,6 +131,7 @@ class MainMenu(Entity):
         self.txt_password_login = InputField(
             color=color.black,
             y=0.05,
+            hide_content = True,
             parent=self.login_menu
         )
 
@@ -244,6 +245,7 @@ class MainMenu(Entity):
         self.txt_password_register = InputField(
             color=color.black,
             y=0.1,
+            hide_content = True,
             parent=self.register_menu
         )
 
