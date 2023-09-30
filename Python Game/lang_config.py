@@ -17,7 +17,8 @@ en = {
     "username": "USERNAME:",
     "password": "PASSWORD:",
     "email": "EMAIL:",
-    "return": "RETURN"
+    "return": "RETURN",
+    "battle": "BATTLE"
 }
 
 lang_config["english"] = en

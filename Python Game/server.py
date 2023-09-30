@@ -8,6 +8,8 @@ IP = "127.0.0.1"
 PORT = 8081
 MAX_CLIENTS = 10
 PACKET_SIZE = 2048
+MAP = {}
+
 
 
 def timeNow():
@@ -50,6 +52,8 @@ server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server_socket.bind((IP, PORT))
 server_socket.listen(MAX_CLIENTS)
 print(timeNow() + "server initialisation completed, server host=" + IP)
+
+# def update_battle():
 
 
 def main():

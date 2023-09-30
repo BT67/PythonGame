@@ -341,6 +341,19 @@ class MainMenu(Entity):
 
         # Main Menu
 
+        def btn_battle_main_event():
+            print()
+
+        self.btn_battle_main = Button(
+            text=lang_config[LANGUAGE]["battle"],
+            color=themes[THEME]["ui_button"],
+            highlight_color=themes[THEME]["ui_button"],
+            parent=self.main_menu,
+            scale_x=themes[THEME]["button_scale_x"],
+            scale_y=themes[THEME]["button_scale_y"]
+        )
+        self.btn_battle_main.on_click = btn_battle_main_event
+
         self.btn_quit_main = Button(
             text=lang_config[LANGUAGE]["quit"],
             color=themes[THEME]["ui_button"],
@@ -389,12 +402,4 @@ class MainMenu(Entity):
 
     def input(self, key):
         if key == Keys.escape:
-            if self.login_menu.enabled:
-                self.init_menu.enabled = True
-                self.login_menu.enabled = False
-            if self.register_menu.enabled:
-                self.init_menu.enabled = True
-                self.register_menu.enabled = False
-            if self.register_success_menu.enabled:
-                self.init_menu.enabled = True
-                self.register_success_menu.enabled = False
+            self.btn_back_event()
