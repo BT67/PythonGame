@@ -1,12 +1,14 @@
 import socket
 import threading
 import datetime
+import socket
+import json
+import datetime
+import threading
 from math import radians
-
 import psycopg2
 from ursina import *
 from ursina.prefabs.first_person_controller import FirstPersonController
-from network import Network
 from lang_config import lang_config
 from themes_config import themes
 
@@ -29,6 +31,31 @@ app = Ursina()
 Sky()
 
 window.fps_counter.enabled = False
+
+# Server Connection:
+
+network = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+PACKET_SIZE = 2048
+client_id = 0
+
+
+def handle_packet():
+    packet = 0
+    try:
+        packet = network.recv(PACKET_SIZE)
+    except socket.error as e:
+        print(e)
+    if not packet:
+        return None
+    packet_data = packet.decode("utf8")
+    try:
+        packet_start_index = packet_data.index("{")
+        packet_end_index = packet_data.index("}") + 1
+        packet_data = packet_data[packet_start_index:packet_end_index]
+        packet_data = json.loads(packet_data)
+    except Exception as e:
+        print(e)
+    return packet_data
 
 # Menus:
 
@@ -314,32 +341,16 @@ def btn_register_event():
     if len(txt_email_register.text) < 1:
         lbl_register_msg.text = lang_config[LANGUAGE]["register_missing_email"]
         return
-    connection = psycopg2.connect(
-        host="127.0.0.1",
-        database="postgres",
-        user="postgres",
-        password="root"
-    )
-    query = """INSERT INTO public.python_users(username, password, email, online_status, current_client) VALUES(%s,%s,%s,false,null);"""
-    values = [
-        txt_username_register.text,
-        txt_password_register.text,
-        txt_email_register.text,
-    ]
-    cursor = connection.cursor()
-    try:
-        cursor.execute(query, values)
-        lbl_register_msg.text = ""
-        txt_username_register.clear()
-        txt_password_register.clear()
-        txt_email_register.clear()
-        register_success_menu.enabled = True
-        register_menu.enabled = False
-    except psycopg2.Error:
-        lbl_register_msg.text = lang_config[LANGUAGE]["register_error"]
-    connection.commit()
-    cursor.close()
-    connection.close()
+
+    txt_username_register.text,
+    txt_password_register.text,
+    txt_email_register.text,
+    lbl_register_msg.text = ""
+    txt_username_register.clear()
+    txt_password_register.clear()
+    txt_email_register.clear()
+    register_success_menu.enabled = True
+    register_menu.enabled = False
 
 
 btn_register = Button(
@@ -440,11 +451,13 @@ def timenow():
 
 # Main server connection loop:
 while True:
-    network = Network(SERVER_HOST, SERVER_PORT)
-    network.set_timeout(10)
+    network = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    network.settimeout(10)
     error_occurred = False
     try:
-        network.connect()
+        network.connect((SERVER_HOST, SERVER_PORT))
+        client_id = network.recv(PACKET_SIZE).decode("utf8")
+        print(timenow() + "server connection established")
     except ConnectionRefusedError:
         print(timenow() + "unable to connect to host server")
         error_occurred = True
@@ -455,7 +468,7 @@ while True:
         print(timenow() + "unable to connect to host server")
         error_occurred = True
     finally:
-        network.set_timeout(None)
+        network.settimeout(None)
     if not error_occurred:
         break
 
@@ -463,7 +476,7 @@ while True:
 def listen():
     while True:
         try:
-            info = network.handle_packet()
+            info = handle_packet()
         except Exception as e:
             print(e)
             continue
