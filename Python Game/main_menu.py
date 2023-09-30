@@ -134,6 +134,9 @@ class MainMenu(Entity):
             parent=self.login_menu
         )
 
+        self.txt_username_login.next_field = self.txt_password_login
+        self.txt_password_login.next_field = self.txt_username_login
+
         def btn_login_event():
             connection = psycopg2.connect(
                 host="127.0.0.1",
@@ -248,6 +251,10 @@ class MainMenu(Entity):
             color=color.black,
             parent=self.register_menu
         )
+
+        self.txt_username_register.next_field = self.txt_password_register
+        self.txt_password_register.next_field = self.txt_email_register
+        self.txt_email_register.next_field = self.txt_username_register
 
         def btn_register_event():
             if len(self.txt_username_register.text) < 1:
