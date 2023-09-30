@@ -7,7 +7,8 @@ import psycopg2
 from ursina import *
 from ursina.prefabs.first_person_controller import FirstPersonController
 from network import Network
-from main_menu import MainMenu
+from lang_config import lang_config
+from themes_config import themes
 
 SERVER_HOST = "127.0.0.1"
 SERVER_PORT = 8081
@@ -20,6 +21,8 @@ MOVE_SPEED_ACC = 0.016
 MOVE_SPEED_DECC = 0.015
 MAX_SPEED = 0.035
 MAX_LOOK_UP = 45
+LANGUAGE = "english"
+THEME = "default"
 
 app = Ursina()
 
@@ -27,8 +30,411 @@ Sky()
 
 window.fps_counter.enabled = False
 
+# Menus:
 
-def timeNow():
+# Initialise menus:
+menus_entity = Entity(parent=camera.ui)
+init_menu = Entity(parent=menus_entity, enabled=True)
+login_menu = Entity(parent=menus_entity, enabled=False)
+register_menu = Entity(parent=menus_entity, enabled=False)
+register_success_menu = Entity(parent=menus_entity, enabled=False)
+main_menu = Entity(parent=menus_entity, enabled=False)
+singleplayer_menu = Entity(parent=menus_entity, enabled=False)
+multiplayer_menu = Entity(parent=menus_entity, enabled=False)
+settings_menu = Entity(parent=menus_entity, enabled=False)
+video_menu = Entity(parent=menus_entity, enabled=False)
+gameplay_menu = Entity(parent=menus_entity, enabled=False)
+audio_menu = Entity(parent=menus_entity, enabled=False)
+controls_menu = Entity(parent=menus_entity, enabled=False)
+pause_menu = Entity(parent=menus_entity, enabled=False)
+quit_menu = Entity(parent=menus_entity, enabled=False)
+
+menus = [
+    init_menu,
+    login_menu,
+    register_menu,
+    main_menu,
+    singleplayer_menu,
+    multiplayer_menu,
+    settings_menu,
+    video_menu,
+    gameplay_menu,
+    audio_menu,
+    controls_menu,
+    pause_menu,
+    quit_menu,
+]
+
+# UI audio
+click = Audio("click.wav", False, False, volume=10)
+
+
+# Init Menu Buttons
+
+def btn_login_init_event():
+    lbl_login_msg.text = ""
+    login_menu.enabled = True
+    init_menu.enabled = False
+
+
+btn_login_init = Button(
+    text=lang_config[LANGUAGE]["login"],
+    color=themes[THEME]["ui_button"],
+    highlight_color=themes[THEME]["ui_button"],
+    parent=init_menu,
+    x=-0.15,
+    y=-0.1,
+    scale_x=themes[THEME]["button_scale_x"],
+    scale_y=themes[THEME]["button_scale_y"]
+)
+btn_login_init.on_click = btn_login_init_event
+
+
+def btn_register_init_event():
+    register_menu.enabled = True
+    init_menu.enabled = False
+
+
+btn_register_init = Button(
+    text=lang_config[LANGUAGE]["register"],
+    color=themes[THEME]["ui_button"],
+    highlight_color=themes[THEME]["ui_button"],
+    parent=init_menu,
+    x=0.15,
+    y=-0.1,
+    scale_x=themes[THEME]["button_scale_x"],
+    scale_y=themes[THEME]["button_scale_y"]
+)
+btn_register_init.on_click = btn_register_init_event
+
+
+def btn_quit_event():
+    quit()
+
+
+def btn_back_event():
+    if login_menu.enabled:
+        init_menu.enabled = True
+        login_menu.enabled = False
+    if register_menu.enabled:
+        init_menu.enabled = True
+        register_menu.enabled = False
+    if register_success_menu.enabled:
+        init_menu.enabled = True
+        register_success_menu.enabled = False
+
+
+btn_quit_init = Button(
+    text=lang_config[LANGUAGE]["quit"],
+    color=themes[THEME]["ui_button"],
+    highlight_color=themes[THEME]["ui_button"],
+    parent=init_menu,
+    y=-0.2,
+    scale_x=themes[THEME]["button_scale_x"],
+    scale_y=themes[THEME]["button_scale_y"]
+)
+btn_quit_init.on_click = btn_quit_event
+
+# Login Menu
+
+login_menu_back = Entity(
+    model="cube",
+    color=themes[THEME]["ui_background"],
+    scale_x=0.6,
+    scale_y=0.5,
+    position_z=1,
+    parent=login_menu
+)
+
+lbl_login_msg = Text(
+    text="",
+    x=-0.25,
+    parent=login_menu
+)
+
+lbl_username_login = Text(
+    text=lang_config[LANGUAGE]["username"],
+    x=-0.25,
+    y=0.2,
+    parent=login_menu
+)
+
+lbl_password_login = Text(
+    text=lang_config[LANGUAGE]["password"],
+    x=-0.25,
+    y=0.1,
+    parent=login_menu
+)
+
+txt_username_login = InputField(
+    color=color.black,
+    y=0.15,
+    parent=login_menu
+)
+
+txt_password_login = InputField(
+    color=color.black,
+    y=0.05,
+    hide_content=True,
+    parent=login_menu
+)
+
+txt_username_login.next_field = txt_password_login
+txt_password_login.next_field = txt_username_login
+
+
+def btn_login_event():
+    connection = psycopg2.connect(
+        host="127.0.0.1",
+        database="postgres",
+        user="postgres",
+        password="root"
+    )
+    query = """SELECT * from public.python_users WHERE username = %s AND password = %s AND online_status = false;"""
+    row = []
+    cursor = connection.cursor()
+    try:
+        values = [
+            txt_username_login.text,
+            txt_password_login.text
+        ]
+        cursor.execute(query, values)
+        row = cursor.fetchone()
+        print(str(type(row)))
+        print(str(row))
+        print(str(row[0]))
+    except Exception:
+        lbl_login_msg.text = lang_config[LANGUAGE]["login_error"]
+    cursor.close()
+    connection.close()
+    if row is not None and len(row) > 0:
+        lbl_login_msg.text = ""
+        txt_username_login.clear()
+        txt_password_login.clear()
+        main_menu.enabled = True
+        login_menu.enabled = False
+    else:
+        lbl_login_msg.text = lang_config[LANGUAGE]["login_error"]
+
+
+btn_login = Button(
+    text=lang_config[LANGUAGE]["login"],
+    color=themes[THEME]["ui_button"],
+    highlight_color=themes[THEME]["ui_button"],
+    parent=login_menu,
+    x=-0.15,
+    y=-0.15,
+    scale_x=themes[THEME]["button_scale_x"],
+    scale_y=themes[THEME]["button_scale_y"]
+)
+btn_login.on_click = btn_login_event
+
+btn_back_login = Button(
+    text=lang_config[LANGUAGE]["return"],
+    color=themes[THEME]["ui_button"],
+    highlight_color=themes[THEME]["ui_button"],
+    parent=login_menu,
+    x=0.15,
+    y=-0.15,
+    scale_x=themes[THEME]["button_scale_x"],
+    scale_y=themes[THEME]["button_scale_y"],
+    onclick=Func(btn_back_event)
+)
+btn_back_login.on_click = btn_back_event
+
+# Register Menu
+
+register_menu_back = Entity(
+    model="cube",
+    color=themes[THEME]["ui_background"],
+    scale_x=0.6,
+    scale_y=0.6,
+    position_z=1,
+    parent=register_menu
+)
+
+lbl_username_register = Text(
+    text=lang_config[LANGUAGE]["username"],
+    x=-0.25,
+    y=0.25,
+    parent=register_menu
+)
+
+lbl_password_register = Text(
+    text=lang_config[LANGUAGE]["password"],
+    x=-0.25,
+    y=0.15,
+    parent=register_menu
+)
+
+lbl_email = Text(
+    text=lang_config[LANGUAGE]["email"],
+    x=-0.25,
+    y=0.05,
+    parent=register_menu
+)
+
+lbl_register_msg = Text(
+    text="",
+    x=-0.25,
+    y=-0.05,
+    parent=register_menu
+)
+
+txt_username_register = InputField(
+    color=color.black,
+    y=0.2,
+    parent=register_menu
+)
+
+txt_password_register = InputField(
+    color=color.black,
+    y=0.1,
+    hide_content=True,
+    parent=register_menu
+)
+
+txt_email_register = InputField(
+    color=color.black,
+    parent=register_menu
+)
+
+txt_username_register.next_field = txt_password_register
+txt_password_register.next_field = txt_email_register
+txt_email_register.next_field = txt_username_register
+
+
+def btn_register_event():
+    if len(txt_username_register.text) < 1:
+        lbl_register_msg.text = lang_config[LANGUAGE]["register_missing_username"]
+        return
+    if len(txt_password_register.text) < 1:
+        lbl_register_msg.text = lang_config[LANGUAGE]["register_missing_password"]
+        return
+    if len(txt_email_register.text) < 1:
+        lbl_register_msg.text = lang_config[LANGUAGE]["register_missing_email"]
+        return
+    connection = psycopg2.connect(
+        host="127.0.0.1",
+        database="postgres",
+        user="postgres",
+        password="root"
+    )
+    query = """INSERT INTO public.python_users(username, password, email, online_status, current_client) VALUES(%s,%s,%s,false,null);"""
+    values = [
+        txt_username_register.text,
+        txt_password_register.text,
+        txt_email_register.text,
+    ]
+    cursor = connection.cursor()
+    try:
+        cursor.execute(query, values)
+        lbl_register_msg.text = ""
+        txt_username_register.clear()
+        txt_password_register.clear()
+        txt_email_register.clear()
+        register_success_menu.enabled = True
+        register_menu.enabled = False
+    except psycopg2.Error:
+        lbl_register_msg.text = lang_config[LANGUAGE]["register_error"]
+    connection.commit()
+    cursor.close()
+    connection.close()
+
+
+btn_register = Button(
+    text=lang_config[LANGUAGE]["register"],
+    color=themes[THEME]["ui_button"],
+    highlight_color=themes[THEME]["ui_button"],
+    parent=register_menu,
+    x=-0.15,
+    y=-0.2,
+    scale_x=themes[THEME]["button_scale_x"],
+    scale_y=themes[THEME]["button_scale_y"]
+)
+btn_register.on_click = btn_register_event
+
+btn_back_register = Button(
+    text=lang_config[LANGUAGE]["return"],
+    color=themes[THEME]["ui_button"],
+    highlight_color=themes[THEME]["ui_button"],
+    parent=register_menu,
+    x=0.15,
+    y=-0.2,
+    scale_x=themes[THEME]["button_scale_x"],
+    scale_y=themes[THEME]["button_scale_y"]
+)
+btn_back_register.on_click = btn_back_event
+
+# Register Success Menu
+
+lbl_register_success = Text(
+    text=lang_config[LANGUAGE]["register_success"],
+    origin=(0, 0),
+    y=-0.05,
+    parent=register_success_menu
+)
+
+btn_back_register_success = Button(
+    text=lang_config[LANGUAGE]["return"],
+    color=themes[THEME]["ui_button"],
+    highlight_color=themes[THEME]["ui_button"],
+    parent=register_success_menu,
+    y=-0.2,
+    scale_x=themes[THEME]["button_scale_x"],
+    scale_y=themes[THEME]["button_scale_y"]
+)
+btn_back_register_success.on_click = btn_back_event
+
+
+# Main Menu
+
+def btn_battle_main_event():
+    print()
+
+
+btn_battle_main = Button(
+    text=lang_config[LANGUAGE]["battle"],
+    color=themes[THEME]["ui_button"],
+    highlight_color=themes[THEME]["ui_button"],
+    parent=main_menu,
+    scale_x=themes[THEME]["button_scale_x"],
+    scale_y=themes[THEME]["button_scale_y"]
+)
+btn_battle_main.on_click = btn_battle_main_event
+
+btn_quit_main = Button(
+    text=lang_config[LANGUAGE]["quit"],
+    color=themes[THEME]["ui_button"],
+    highlight_color=themes[THEME]["ui_button"],
+    parent=main_menu,
+    x=-0.15,
+    y=-0.2,
+    scale_x=themes[THEME]["button_scale_x"],
+    scale_y=themes[THEME]["button_scale_y"]
+)
+btn_quit_main.on_click = btn_quit_event
+
+
+def btn_logout_main_event():
+    init_menu.enabled = True
+    main_menu.enabled = False
+
+
+btn_logout_main = Button(
+    text=lang_config[LANGUAGE]["logout"],
+    color=themes[THEME]["ui_button"],
+    highlight_color=themes[THEME]["ui_button"],
+    parent=main_menu,
+    x=0.15,
+    y=-0.2,
+    scale_x=themes[THEME]["button_scale_x"],
+    scale_y=themes[THEME]["button_scale_y"]
+)
+btn_logout_main._on_click = btn_logout_main_event
+
+
+def timenow():
     return str(datetime.datetime.now()) + " "
 
 
@@ -40,13 +446,13 @@ while True:
     try:
         network.connect()
     except ConnectionRefusedError:
-        print(timeNow() + "unable to connect to host server")
+        print(timenow() + "unable to connect to host server")
         error_occurred = True
     except socket.timeout:
-        print(timeNow() + "server connection timed out")
+        print(timenow() + "server connection timed out")
         error_occurred = True
     except socket.gaierror:
-        print(timeNow() + "unable to connect to host server")
+        print(timenow() + "unable to connect to host server")
         error_occurred = True
     finally:
         network.set_timeout(None)
@@ -107,11 +513,12 @@ def update():
         move_speed = MAX_SPEED
     if player_model.reverse:
         move_direction = 180 + player_model.rotation_y
-    #player_model.z += cos(radians(move_direction)) * move_speed
-    #player_model.x += sin(radians(move_direction)) * move_speed
+    # player_model.z += cos(radians(move_direction)) * move_speed
+    # player_model.x += sin(radians(move_direction)) * move_speed
     player_camera.z = player_model.z
     player_camera.x = player_model.x
     player_model.move_speed = move_speed
+
 
 def input(key):
     if key == Keys.scroll_up:
@@ -155,9 +562,7 @@ player_model = Entity(
 player_model.move_speed = 0
 player_model.reverse = 0
 
-#camera.z = -5
-
-main_menu = MainMenu(LANGUAGE="english", THEME="default")
+# camera.z = -5
 player_model.enabled = False
 player_camera.enabled = False
 
