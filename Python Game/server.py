@@ -91,6 +91,28 @@ def process_login(client_id, username, password):
             "status": False
         }
         clients[client_id].send(json.dumps(packet).encode("utf-8"))
+    connection.commit()
+    cursor.close()
+    connection.close()
+
+
+def process_logout(client_id):
+    connection = psycopg2.connect(
+        host="127.0.0.1",
+        database="postgres",
+        user="postgres",
+        password="root"
+    )
+    cursor = connection.cursor()
+    try:
+        query = """UPDATE public.python_users SET online_status = false, current_client = NULL WHERE current_client = %s AND online_status = true;"""
+        values = [
+            int(client_id),
+        ]
+        cursor.execute(query, values)
+    except psycopg2.Error as e:
+        print(e)
+    connection.commit()
     cursor.close()
     connection.close()
 
@@ -122,12 +144,16 @@ def handle_packet(client_id: str):
             # packet_end_index = packet_data.index("}") + 1
             # packet_data = packet_data[packet_start_index:packet_end_index]
             packet_data = json.loads(packet_data)
-            print(timenow() + " packet from clientID={client_id}, packet data={str(packet_data)}")
+            print(timenow() + " packet from clientID={client_id}, packet data=" + str(packet_data))
             match packet_data["type"]:
                 case "REGISTER":
-                    process_register(packet_data["client_id"], packet_data["username"], packet_data["password"], packet_data["email"])
+                    process_register(packet_data["client_id"], packet_data["username"], packet_data["password"],
+                                     packet_data["email"])
+                    break
                 case "LOGIN":
                     process_login(packet_data["client_id"], packet_data["username"], packet_data["password"])
+                case "LOGOUT":
+                    process_logout(packet_data["client_id"])
         except Exception as e:
             print(e)
 

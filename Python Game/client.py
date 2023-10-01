@@ -413,6 +413,12 @@ btn_quit_main.on_click = btn_quit_event
 
 
 def btn_logout_main_event():
+    packet = {
+        "type": "LOGOUT",
+        "client_id": client_id
+    }
+    print(timenow() + "packet to server: " + json.dumps(packet))
+    network.send(json.dumps(packet).encode("utf-8"))
     init_menu.enabled = True
     main_menu.enabled = False
 
