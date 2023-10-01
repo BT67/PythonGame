@@ -1,12 +1,8 @@
 import socket
-import threading
-import datetime
-import socket
 import json
 import datetime
 import threading
 from math import radians
-import psycopg2
 from ursina import *
 from ursina.prefabs.first_person_controller import FirstPersonController
 from lang_config import lang_config
@@ -34,7 +30,6 @@ window.fps_counter.enabled = False
 
 # Server Connection:
 
-network = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 PACKET_SIZE = 2048
 client_id = 0
 
@@ -49,13 +44,18 @@ def handle_packet():
         return None
     packet_data = packet.decode("utf8")
     try:
-        packet_start_index = packet_data.index("{")
-        packet_end_index = packet_data.index("}") + 1
-        packet_data = packet_data[packet_start_index:packet_end_index]
+        # packet_start_index = packet_data.index("{")
+        # packet_end_index = packet_data.index("}") + 1
+        # packet_data = packet_data[packet_start_index:packet_end_index]
         packet_data = json.loads(packet_data)
+        match packet_data["type"]:
+            case "REGISTER_STATUS":
+                register_status(packet_data["status"])
+            case "LOGIN_STATUS":
+                login_status(packet_data["status"])
     except Exception as e:
         print(e)
-    return packet_data
+
 
 # Menus:
 
@@ -212,17 +212,20 @@ txt_password_login.next_field = txt_username_login
 
 def btn_login_event():
     if len(txt_username_login.text) < 1:
-        lbl_register_msg.text = lang_config[LANGUAGE]["invalid_login"]
+        lbl_login_msg.text = lang_config[LANGUAGE]["invalid_login"]
         return
     if len(txt_password_login.text) < 1:
-        lbl_register_msg.text = lang_config[LANGUAGE]["invalid_login"]
+        lbl_login_msg.text = lang_config[LANGUAGE]["invalid_login"]
         return
-    network.send([
-        "LOGIN",
-        client_id,
-        txt_username_login.text,
-        txt_password_login.text
-    ])
+    packet = {
+        "type": "LOGIN",
+        "client_id": client_id,
+        "username": txt_username_login.text,
+        "password": txt_password_login.text
+    }
+    print(timenow() + "packet to server: " + json.dumps(packet))
+    print(timenow() + str(network))
+    network.send(json.dumps(packet).encode("utf-8"))
     lbl_register_msg.text = ""
 
 
@@ -323,21 +326,16 @@ def btn_register_event():
     if len(txt_email_register.text) < 1:
         lbl_register_msg.text = lang_config[LANGUAGE]["register_missing_email"]
         return
-    network.send([
-        "REGISTER",
-        client_id,
-        txt_username_register.text,
-        txt_password_register.text,
-        txt_email_register.text,
-    ])
+    packet = {
+        "type": "REGISTER",
+        "client_id": client_id,
+        "username": txt_username_register.text,
+        "password": txt_password_register.text,
+        "email": txt_email_register.text,
+    }
+    print(timenow() + "sending packet to server: " + json.dumps(packet))
+    network.send(json.dumps(packet).encode("utf-8"))
     lbl_register_msg.text = ""
-
-
-    txt_username_register.clear()
-    txt_password_register.clear()
-    txt_email_register.clear()
-    register_success_menu.enabled = True
-    register_menu.enabled = False
 
 
 btn_register = Button(
@@ -445,6 +443,7 @@ while True:
         network.connect((SERVER_HOST, SERVER_PORT))
         client_id = network.recv(PACKET_SIZE).decode("utf8")
         print(timenow() + "server connection established")
+        print(timenow() + str(network))
     except ConnectionRefusedError:
         print(timenow() + "unable to connect to host server")
         error_occurred = True
@@ -459,6 +458,7 @@ while True:
     if not error_occurred:
         break
 
+
 def register_status(status):
     if status:
         txt_username_register.clear()
@@ -469,19 +469,23 @@ def register_status(status):
     else:
         lbl_register_msg.text = lang_config[LANGUAGE]["register_error"]
 
+
+def login_status(status):
+    if status:
+        txt_username_login.clear()
+        txt_password_login.clear()
+        main_menu.enabled = True
+        login_menu.enabled = False
+    else:
+        lbl_login_msg.text = lang_config[LANGUAGE]["invalid_login"]
+
+
 def listen():
     while True:
         try:
-            info = handle_packet()
-            match info[0]:
-                case "REGISTER_STATUS":
-                    register_status(info[1])
-
-
+            handle_packet()
         except Exception as e:
             print(e)
-            continue
-        if not info:
             continue
 
 
@@ -579,13 +583,6 @@ player_model.reverse = 0
 # camera.z = -5
 player_model.enabled = False
 player_camera.enabled = False
-
-connection = psycopg2.connect(
-    host="127.0.0.1",
-    database="postgres",
-    user="postgres",
-    password="root"
-)
 
 if __name__ == "__main__":
     main()
