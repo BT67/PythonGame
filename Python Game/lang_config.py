@@ -5,7 +5,7 @@ en = {
     "yes": "YES",
     "no": "NO",
     "login": "LOGIN",
-    "login_error": "Unable to login:\nIncorrect username or password",
+    "invalid_login": "Incorrect username or password",
     "logout": "LOGOUT",
     "register": "REGISTER",
     "register_error": "Unable to register new account:\nusername or email is taken",

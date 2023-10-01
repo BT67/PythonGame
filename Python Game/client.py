@@ -211,37 +211,19 @@ txt_password_login.next_field = txt_username_login
 
 
 def btn_login_event():
-    connection = psycopg2.connect(
-        host="127.0.0.1",
-        database="postgres",
-        user="postgres",
-        password="root"
-    )
-    query = """SELECT * from public.python_users WHERE username = %s AND password = %s AND online_status = false;"""
-    row = []
-    cursor = connection.cursor()
-    try:
-        values = [
-            txt_username_login.text,
-            txt_password_login.text
-        ]
-        cursor.execute(query, values)
-        row = cursor.fetchone()
-        print(str(type(row)))
-        print(str(row))
-        print(str(row[0]))
-    except Exception:
-        lbl_login_msg.text = lang_config[LANGUAGE]["login_error"]
-    cursor.close()
-    connection.close()
-    if row is not None and len(row) > 0:
-        lbl_login_msg.text = ""
-        txt_username_login.clear()
-        txt_password_login.clear()
-        main_menu.enabled = True
-        login_menu.enabled = False
-    else:
-        lbl_login_msg.text = lang_config[LANGUAGE]["login_error"]
+    if len(txt_username_login.text) < 1:
+        lbl_register_msg.text = lang_config[LANGUAGE]["invalid_login"]
+        return
+    if len(txt_password_login.text) < 1:
+        lbl_register_msg.text = lang_config[LANGUAGE]["invalid_login"]
+        return
+    network.send([
+        "LOGIN",
+        client_id,
+        txt_username_login.text,
+        txt_password_login.text
+    ])
+    lbl_register_msg.text = ""
 
 
 btn_login = Button(
@@ -341,11 +323,16 @@ def btn_register_event():
     if len(txt_email_register.text) < 1:
         lbl_register_msg.text = lang_config[LANGUAGE]["register_missing_email"]
         return
-
-    txt_username_register.text,
-    txt_password_register.text,
-    txt_email_register.text,
+    network.send([
+        "REGISTER",
+        client_id,
+        txt_username_register.text,
+        txt_password_register.text,
+        txt_email_register.text,
+    ])
     lbl_register_msg.text = ""
+
+
     txt_username_register.clear()
     txt_password_register.clear()
     txt_email_register.clear()
@@ -472,11 +459,25 @@ while True:
     if not error_occurred:
         break
 
+def register_status(status):
+    if status:
+        txt_username_register.clear()
+        txt_password_register.clear()
+        txt_email_register.clear()
+        register_success_menu.enabled = True
+        register_menu.enabled = False
+    else:
+        lbl_register_msg.text = lang_config[LANGUAGE]["register_error"]
 
 def listen():
     while True:
         try:
             info = handle_packet()
+            match info[0]:
+                case "REGISTER_STATUS":
+                    register_status(info[1])
+
+
         except Exception as e:
             print(e)
             continue

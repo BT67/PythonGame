@@ -12,7 +12,7 @@ PACKET_SIZE = 2048
 MAP = {}
 
 
-def register(username, password, email):
+def process_register(client_id, username, password, email):
     connection = psycopg2.connect(
         host="127.0.0.1",
         database="postgres",
@@ -29,14 +29,64 @@ def register(username, password, email):
     try:
         cursor.execute(query, values)
     except psycopg2.Error:
-        print()
-        # Send register status failed packet back to client
+        clients[client_id].send([
+            "REGISTER_STATUS",
+            False
+        ])
     connection.commit()
     cursor.close()
     connection.close()
 
+def process_login(client_id, username, password):
+    connection = psycopg2.connect(
+        host="127.0.0.1",
+        database="postgres",
+        user="postgres",
+        password="root"
+    )
+    row = []
+    cursor = connection.cursor()
+    try:
+        query = """SELECT * from public.python_users WHERE username = %s AND password = %s AND online_status = false;"""
+        values = [
+            username,
+            password
+        ]
+        cursor.execute(query, values)
+        row = cursor.fetchone()
+    except psycopg2.Error:
+        # TODO add server log msg
+        print()
+    cursor.close()
+    connection.close()
+    if row is not None and len(row) > 0:
+        try:
+            query = """UPDATE public.python_users SET online_status = true, current_client = %s WHERE username = %s AND password = %s AND online_status = false;"""
+            values = [
+                client_id,
+                username,
+                password
+            ]
+            cursor.execute(query, values)
+            clients[client_id].send([
+                "LOGIN_STATUS",
+                True
+            ])
+        except psycopg2.Error:
+            clients[client_id].send([
+                "LOGIN_STATUS",
+                False
+            ])
+    else:
+        clients[client_id].send([
+            "LOGIN_STATUS",
+            False
+        ])
+    cursor.close()
+    connection.close()
 
-def timeNow():
+
+def timenow():
     return str(datetime.datetime.now()) + " "
 
 
@@ -63,8 +113,12 @@ def handle_packet(client_id: str):
             packet_end_index = packet_data.index("}") + 1
             packet_data = packet_data[packet_start_index:packet_end_index]
             packet_data = json.loads(packet_data)
-            print(timeNow() + f"packet from clientID={client_id}, packet data={str(packet_data)}")
-            return packet_data
+            print(timenow() + f"packet from clientID={client_id}, packet data={str(packet_data)}")
+            match packet_data.packet_type:
+                case "REGISTER":
+                    process_register(packet_data.username, packet_data.password, packet_data.email)
+                case "LOGIN":
+                    process_login(packet_data.username, packet_data.password)
         except Exception as e:
             print(e)
 
@@ -75,7 +129,7 @@ clients = {}
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server_socket.bind((IP, PORT))
 server_socket.listen(MAX_CLIENTS)
-print(timeNow() + "server initialisation completed, server host=" + IP)
+print(timenow() + "server initialisation completed, server host=" + IP)
 
 
 # def update_battle():
@@ -87,7 +141,7 @@ def main():
         connection, address = server_socket.accept()
         client_id = assign_client_id(clients, MAX_CLIENTS)
         connection.send(client_id.encode("utf8"))
-        print(timeNow() + "client connected, clientID=" + client_id)
+        print(timenow() + "client connected, clientID=" + client_id)
 
 
 if __name__ == "__main__":
