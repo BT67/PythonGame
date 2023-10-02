@@ -11,6 +11,7 @@ MAX_CLIENTS = 10
 PACKET_SIZE = 2048
 MAP = {}
 clients = {}
+lobby = {}
 
 
 def process_register(client_id, username, password, email):
@@ -117,6 +118,14 @@ def process_logout(client_id):
     connection.close()
 
 
+def process_enter_lobby(client_id):
+    lobby[client_id] = clients[client_id]
+
+
+def process_leave_lobby(client_id):
+    lobby.pop(client_id, None)
+
+
 def timenow():
     return str(datetime.datetime.now()) + " "
 
@@ -154,6 +163,10 @@ def handle_packet(client_id: str):
                     process_login(packet_data["client_id"], packet_data["username"], packet_data["password"])
                 case "LOGOUT":
                     process_logout(packet_data["client_id"])
+                case "ENTER_LOBBY":
+                    process_enter_lobby(packet_data["client_id"])
+                case "LEAVE_LOBBY":
+                    process_leave_lobby(packet_data["client_id"])
         except Exception as e:
             print(e)
 
@@ -191,7 +204,6 @@ def main():
     connection.commit()
     cursor.close()
     connection.close()
-
 
     while True:
         # Listen for new connection and assign client ID:

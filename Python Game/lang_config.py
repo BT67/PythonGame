@@ -18,7 +18,8 @@ en = {
     "password": "PASSWORD:",
     "email": "EMAIL:",
     "return": "RETURN",
-    "battle": "BATTLE"
+    "battle": "BATTLE",
+    "waiting_lobby": "Searching for games..."
 }
 
 lang_config["english"] = en

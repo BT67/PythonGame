@@ -66,8 +66,7 @@ login_menu = Entity(parent=menus_entity, enabled=False)
 register_menu = Entity(parent=menus_entity, enabled=False)
 register_success_menu = Entity(parent=menus_entity, enabled=False)
 main_menu = Entity(parent=menus_entity, enabled=False)
-singleplayer_menu = Entity(parent=menus_entity, enabled=False)
-multiplayer_menu = Entity(parent=menus_entity, enabled=False)
+lobby_menu = Entity(parent=menus_entity, enabled=False)
 settings_menu = Entity(parent=menus_entity, enabled=False)
 video_menu = Entity(parent=menus_entity, enabled=False)
 gameplay_menu = Entity(parent=menus_entity, enabled=False)
@@ -81,8 +80,7 @@ menus = [
     login_menu,
     register_menu,
     main_menu,
-    singleplayer_menu,
-    multiplayer_menu,
+    lobby_menu,
     settings_menu,
     video_menu,
     gameplay_menu,
@@ -386,7 +384,14 @@ btn_back_register_success.on_click = btn_back_event
 # Main Menu
 
 def btn_battle_main_event():
-    print()
+    packet = {
+        "type": "ENTER_LOBBY",
+        "client_id": client_id
+    }
+    print(timenow() + "packet to server: " + json.dumps(packet))
+    network.send(json.dumps(packet).encode("utf-8"))
+    lobby_menu.enabled = True
+    main_menu.enabled = False
 
 
 btn_battle_main = Button(
@@ -434,6 +439,37 @@ btn_logout_main = Button(
     scale_y=themes[THEME]["button_scale_y"]
 )
 btn_logout_main._on_click = btn_logout_main_event
+
+
+# Lobby Menu:
+
+def btn_return_lobby_event():
+    packet = {
+        "type": "LEAVE_LOBBY",
+        "client_id": client_id
+    }
+    print(timenow() + "packet to server: " + json.dumps(packet))
+    network.send(json.dumps(packet).encode("utf-8"))
+    main_menu.enabled = True
+    lobby_menu.enabled = False
+
+
+btn_return_lobby = Button(
+    text=lang_config[LANGUAGE]["RETURN"],
+    color=themes[THEME]["ui_button"],
+    highlight_color=themes[THEME]["ui_button"],
+    parent=lobby_menu,
+    y=-0.2,
+    scale_x=themes[THEME]["button_scale_x"],
+    scale_y=themes[THEME]["button_scale_y"]
+)
+btn_return_lobby._on_click = btn_return_lobby_event
+
+lbl_lobby = Text(
+    text=lang_config[LANGUAGE]["waiting_lobby"],
+    y=0.25,
+    parent=lobby_menu
+)
 
 
 def timenow():
