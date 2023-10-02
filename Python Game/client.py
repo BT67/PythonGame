@@ -53,6 +53,9 @@ def handle_packet():
                 register_status(packet_data["status"])
             case "LOGIN_STATUS":
                 login_status(packet_data["status"])
+            case "SERVERS_FULL":
+                lbl_lobby.text = lang_config[LANGUAGE]["servers_full"]
+
     except Exception as e:
         print(e)
 
@@ -391,6 +394,7 @@ def btn_battle_main_event():
     print(timenow() + "packet to server: " + json.dumps(packet))
     network.send(json.dumps(packet).encode("utf-8"))
     lobby_menu.enabled = True
+    lbl_lobby.text = ""
     main_menu.enabled = False
 
 

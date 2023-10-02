@@ -2,14 +2,16 @@ import socket
 import json
 import datetime
 import random
+import threading
 
 import psycopg2
+from ursina import *
 
 IP = "127.0.0.1"
 PORT = 8081
 MAX_CLIENTS = 10
 PACKET_SIZE = 2048
-MAP = {}
+maps = {}
 clients = {}
 lobby = {}
 
@@ -186,6 +188,23 @@ def listen():
             print(e)
             continue
 
+def lobby_loop():
+    for client in clients:
+        sorting_dict = {}
+        for map_obj in maps:
+            if not map_obj["is_full"]:
+                sorting_dict[map_obj["name"]] = len(map_obj["clients"])
+        if len(sorting_dict) > 0:
+            sorting_dict = dict(sorted(sorting_dict.items(), key=lambda item: item[1]))
+            target_map = next(iter(sorting_dict.keys()))
+            maps[target_map]["clients"][client.client_id] = client
+            lobby.pop(client.client_id, None)
+        else:
+            packet = {
+                "type": "SERVERS_FULL",
+            }
+            clients[client.client_id].send(json.dumps(packet).encode("utf-8"))
+
 
 def main():
     # Set all users online_status = false
@@ -204,7 +223,20 @@ def main():
     connection.commit()
     cursor.close()
     connection.close()
-
+    # Init Maps:
+    maps["map1"] = {
+        "name": "map1",
+        "clients": {},
+        "size": 1000,
+        "ground": {
+            "texture": "white_cube",
+            "color": color.light_gray
+        },
+        "is_full": False
+    }
+    # Start lobby thread
+    lobby_thread = threading.Thread(target=lobby_loop, daemon=True)
+    lobby_thread.start()
     while True:
         # Listen for new connection and assign client ID:
         connection, address = server_socket.accept()

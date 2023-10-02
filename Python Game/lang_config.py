@@ -19,7 +19,8 @@ en = {
     "email": "EMAIL:",
     "return": "RETURN",
     "battle": "BATTLE",
-    "waiting_lobby": "Searching for games..."
+    "waiting_lobby": "Searching for games...",
+    "servers_full": "Game Servers are Currently Full"
 }
 
 lang_config["english"] = en

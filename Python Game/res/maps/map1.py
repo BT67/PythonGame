@@ -1,5 +1,7 @@
 from ursina import *
 
+# Map model used by the client
+
 class Map:
     def __init__(self):
         super().__init__(
@@ -7,7 +9,7 @@ class Map:
         )
 
         MAP_WIDTH = 1000
-        clients = []
+        clients = {}
         floor = Entity(
             model="plane",
             scale=(MAP_WIDTH, 1, MAP_WIDTH),
