@@ -175,6 +175,24 @@ def listen():
 
 
 def main():
+    # Set all users online_status = false
+    connection = psycopg2.connect(
+        host="127.0.0.1",
+        database="postgres",
+        user="postgres",
+        password="root"
+    )
+    cursor = connection.cursor()
+    try:
+        query = """UPDATE public.python_users SET online_status = false, current_client = NULL;"""
+        cursor.execute(query)
+    except psycopg2.Error as e:
+        print(e)
+    connection.commit()
+    cursor.close()
+    connection.close()
+
+
     while True:
         # Listen for new connection and assign client ID:
         connection, address = server_socket.accept()
