@@ -55,6 +55,12 @@ def handle_packet():
                 login_status(packet_data["status"])
             case "SERVERS_FULL":
                 lbl_lobby.text = lang_config[LANGUAGE]["servers_full"]
+            case "ENTER_MAP":
+                enter_map(packet_data["map_name"])
+            case "POS":
+                update_pos(
+                    packet_data["entity_name"]
+                )
 
     except Exception as e:
         print(e)
@@ -459,7 +465,7 @@ def btn_return_lobby_event():
 
 
 btn_return_lobby = Button(
-    text=lang_config[LANGUAGE]["RETURN"],
+    text=lang_config[LANGUAGE]["return"],
     color=themes[THEME]["ui_button"],
     highlight_color=themes[THEME]["ui_button"],
     parent=lobby_menu,
@@ -524,6 +530,16 @@ def login_status(status):
         login_menu.enabled = False
     else:
         lbl_login_msg.text = lang_config[LANGUAGE]["invalid_login"]
+
+def update_pos(entity_name):
+    print("updating entity=" + entity_name)
+
+def enter_map(map_name):
+    load_map(map_name)
+
+
+def load_map(map_name):
+    print("loading map=" + map_name)
 
 
 def listen():

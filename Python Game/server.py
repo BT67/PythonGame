@@ -11,9 +11,9 @@ IP = "127.0.0.1"
 PORT = 8081
 MAX_CLIENTS = 10
 PACKET_SIZE = 2048
-maps = {}
+maps = []
 clients = {}
-lobby = {}
+lobby = []
 
 
 def process_register(client_id, username, password, email):
@@ -23,11 +23,12 @@ def process_register(client_id, username, password, email):
         user="postgres",
         password="root"
     )
-    query = """INSERT INTO public.python_users(username, password, email, online_status, current_client) VALUES(%s,%s,%s,false,null);"""
+    query = """INSERT INTO public.python_users(username, password, email, online_status, current_client, in_battle) VALUES(%s,%s,%s,false,%s,false);"""
     values = [
         username,
         password,
         email,
+        client_id
     ]
     cursor = connection.cursor()
     try:
@@ -37,7 +38,8 @@ def process_register(client_id, username, password, email):
             "status": True
         }
         clients[client_id].send(json.dumps(packet).encode("utf-8"))
-    except psycopg2.Error:
+    except psycopg2.Error as e:
+        print(e)
         packet = {
             "type": "REGISTER_STATUS",
             "status": False
@@ -121,11 +123,11 @@ def process_logout(client_id):
 
 
 def process_enter_lobby(client_id):
-    lobby[client_id] = clients[client_id]
+    lobby.append(client_id)
 
 
 def process_leave_lobby(client_id):
-    lobby.pop(client_id, None)
+    lobby.pop(lobby.index(client_id))
 
 
 def timenow():
@@ -155,7 +157,7 @@ def handle_packet(client_id: str):
             # packet_end_index = packet_data.index("}") + 1
             # packet_data = packet_data[packet_start_index:packet_end_index]
             packet_data = json.loads(packet_data)
-            print(timenow() + " packet from clientID={client_id}, packet data=" + str(packet_data))
+            print(timenow() + "packet from clientID={client_id}, packet data=" + str(packet_data))
             match packet_data["type"]:
                 case "REGISTER":
                     process_register(packet_data["client_id"], packet_data["username"], packet_data["password"],
@@ -167,6 +169,7 @@ def handle_packet(client_id: str):
                     process_logout(packet_data["client_id"])
                 case "ENTER_LOBBY":
                     process_enter_lobby(packet_data["client_id"])
+                    check_lobby(packet_data["client_id"])
                 case "LEAVE_LOBBY":
                     process_leave_lobby(packet_data["client_id"])
         except Exception as e:
@@ -188,22 +191,36 @@ def listen():
             print(e)
             continue
 
-def lobby_loop():
-    for client in clients:
-        sorting_dict = {}
-        for map_obj in maps:
-            if not map_obj["is_full"]:
-                sorting_dict[map_obj["name"]] = len(map_obj["clients"])
-        if len(sorting_dict) > 0:
-            sorting_dict = dict(sorted(sorting_dict.items(), key=lambda item: item[1]))
-            target_map = next(iter(sorting_dict.keys()))
-            maps[target_map]["clients"][client.client_id] = client
-            lobby.pop(client.client_id, None)
-        else:
+
+def check_lobby(client_id):
+    servers_full = True
+    for map_obj in maps:
+        if not map_obj["is_full"]:
+            servers_full = False
             packet = {
-                "type": "SERVERS_FULL",
+                "type": "ENTER_MAP",
+                "map_name": map_obj["map_name"]
             }
-            clients[client.client_id].send(json.dumps(packet).encode("utf-8"))
+            clients[client_id].send(json.dumps(packet).encode("utf-8"))
+            print(timenow() + "moving clientID=" + client_id + " into map=" + map_obj["map_name"])
+            lobby.pop(lobby.index(client_id))
+    if servers_full:
+        packet = {
+            "type": "SERVERS_FULL",
+        }
+        clients[client_id].send(json.dumps(packet).encode("utf-8"))
+
+
+def maps_update_loop():
+    for map_obj in maps:
+        for client in map_obj["clients"]:
+            # Send client positions of all clients in the map, including itself
+            for otherClient in map_obj.clients:
+                packet = {
+                    "type": "POS",
+                    "entity_name": otherClient.entity_name
+                }
+                clients[client.client_id].send(json.dumps(packet).encode("utf-8"))
 
 
 def main():
@@ -224,8 +241,8 @@ def main():
     cursor.close()
     connection.close()
     # Init Maps:
-    maps["map1"] = {
-        "name": "map1",
+    new_map = {
+        "map_name": "map1",
         "clients": {},
         "size": 1000,
         "ground": {
@@ -234,9 +251,10 @@ def main():
         },
         "is_full": False
     }
-    # Start lobby thread
-    lobby_thread = threading.Thread(target=lobby_loop, daemon=True)
-    lobby_thread.start()
+    maps.append(new_map)
+    # Start maps update thread:
+    maps_thread = threading.Thread(target=maps_update_loop, daemon=True)
+    maps_thread.start()
     while True:
         # Listen for new connection and assign client ID:
         connection, address = server_socket.accept()
