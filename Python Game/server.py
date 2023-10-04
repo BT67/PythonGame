@@ -203,10 +203,20 @@ def check_lobby(client_id):
             }
             clients[client_id].send(json.dumps(packet).encode("utf-8"))
             print(timenow() + "moving clientID=" + client_id + " into map=" + map_obj["map_name"])
+            spawn_clients(client_id, map_obj)
             lobby.pop(lobby.index(client_id))
     if servers_full:
         packet = {
             "type": "SERVERS_FULL",
+        }
+        clients[client_id].send(json.dumps(packet).encode("utf-8"))
+
+
+def spawn_clients(client_id, map_obj):
+    for client in map_obj["clients"]:
+        packet = {
+            "type": "SPAWN",
+            "entity_name": clients[client]
         }
         clients[client_id].send(json.dumps(packet).encode("utf-8"))
 
@@ -243,7 +253,7 @@ def main():
     # Init Maps:
     new_map = {
         "map_name": "map1",
-        "clients": {},
+        "clients": [],
         "size": 1000,
         "ground": {
             "texture": "white_cube",

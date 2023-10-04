@@ -22,6 +22,8 @@ MAX_SPEED = 0.035
 MAX_LOOK_UP = 45
 LANGUAGE = "english"
 THEME = "default"
+in_game = False
+game_entities = {}
 
 app = Ursina()
 
@@ -60,7 +62,18 @@ def handle_packet():
                 enter_map(packet_data["map_name"])
             case "POS":
                 update_pos(
-                    packet_data["entity_name"]
+                    packet_data["entity_name"],
+                    packet_data["pos_x"],
+                    packet_data["pos_y"],
+                    packet_data["target_x"],
+                    packet_data["target_y"]
+                )
+            case "SPAWN":
+                spawn(
+                    packet_data["entity_name"],
+                    packet_data["pos_x"],
+                    packet_data["pos_y"],
+                    packet_data["health"]
                 )
 
     except Exception as e:
@@ -495,6 +508,8 @@ def btn_leave_game_event():
     network.send(json.dumps(packet).encode("utf-8"))
     in_game_menu.enabled = False
     main_menu.enabled = True
+    in_game = False
+    game_entities = {}
     ground.color = map_models["default"]["GROUND_COLOR"]
     ground.texture = map_models["default"]["GROUND_TEXTURE"]
     ground.texture_scale = map_models["default"]["GROUND_TEXTURE_SCALE"]
@@ -590,11 +605,21 @@ def login_status(status):
         lbl_login_msg.text = lang_config[LANGUAGE]["invalid_login"]
 
 
-def update_pos(entity_name):
-    print("updating entity=" + entity_name)
+def update_pos(entity_name, pos_x, pos_y, target_x, target_y):
+    print("pos entity=" + entity_name)
+
+
+def spawn(entity_name, pos_x, pos_y, health):
+    new_entity = Entity(
+        position_x=pos_x,
+        position_y=pos_y
+    )
+    game_entities["entity_name"] = new_entity
+    print("spawn entity=" + entity_name)
 
 
 def enter_map(map_name):
+    in_game = True
     load_map(map_name)
     in_game_menu.enabled = True
     lobby_menu.enabled = False
@@ -623,46 +648,47 @@ def main():
 
 
 def update():
-    player_camera.rotation_y = player_camera.rotation_y % 360
-    player_model.rotation_y = player_model.rotation_y % 360
-    if camera.rotation_x > MAX_LOOK_UP:
-        camera.rotation_x = MAX_LOOK_UP
-    player_camera.y = player_model.y
-    move_speed = player_model.move_speed
-    move_speed -= MOVE_SPEED_DECC
-    move_direction = player_model.rotation_y
-    if move_speed <= 0:
-        move_speed = 0
-        player_model.reverse = 0
-    if held_keys['w'] | held_keys['up arrow']:
-        move_speed += MOVE_SPEED_ACC
-        player_model.reverse = 0
-    if held_keys['a'] | held_keys['left arrow']:
+    if in_game:
+        player_camera.rotation_y = player_camera.rotation_y % 360
+        player_model.rotation_y = player_model.rotation_y % 360
+        if camera.rotation_x > MAX_LOOK_UP:
+            camera.rotation_x = MAX_LOOK_UP
+        player_camera.y = player_model.y
+        move_speed = player_model.move_speed
+        move_speed -= MOVE_SPEED_DECC
+        move_direction = player_model.rotation_y
+        if move_speed <= 0:
+            move_speed = 0
+            player_model.reverse = 0
+        if held_keys['w'] | held_keys['up arrow']:
+            move_speed += MOVE_SPEED_ACC
+            player_model.reverse = 0
+        if held_keys['a'] | held_keys['left arrow']:
+            if player_model.reverse:
+                player_model.pivot_y = - 3
+                player_model.rotation_y += TURN_SPEED
+            else:
+                player_model.pivot_y = 3
+                player_model.rotation_y -= TURN_SPEED
+        if held_keys['s'] | held_keys['down arrow']:
+            player_model.reverse = 1
+            move_speed += MOVE_SPEED_ACC
+        if held_keys['d'] | held_keys['right arrow']:
+            if player_model.reverse:
+                player_model.pivot_y = 3
+                player_model.rotation_y -= TURN_SPEED
+            else:
+                player_model.pivot_y = - 3
+                player_model.rotation_y += TURN_SPEED
+        if move_speed > MAX_SPEED:
+            move_speed = MAX_SPEED
         if player_model.reverse:
-            player_model.pivot_y = - 3
-            player_model.rotation_y += TURN_SPEED
-        else:
-            player_model.pivot_y = 3
-            player_model.rotation_y -= TURN_SPEED
-    if held_keys['s'] | held_keys['down arrow']:
-        player_model.reverse = 1
-        move_speed += MOVE_SPEED_ACC
-    if held_keys['d'] | held_keys['right arrow']:
-        if player_model.reverse:
-            player_model.pivot_y = 3
-            player_model.rotation_y -= TURN_SPEED
-        else:
-            player_model.pivot_y = - 3
-            player_model.rotation_y += TURN_SPEED
-    if move_speed > MAX_SPEED:
-        move_speed = MAX_SPEED
-    if player_model.reverse:
-        move_direction = 180 + player_model.rotation_y
-    # player_model.z += cos(radians(move_direction)) * move_speed
-    # player_model.x += sin(radians(move_direction)) * move_speed
-    player_camera.z = player_model.z
-    player_camera.x = player_model.x
-    player_model.move_speed = move_speed
+            move_direction = 180 + player_model.rotation_y
+        # player_model.z += cos(radians(move_direction)) * move_speed
+        # player_model.x += sin(radians(move_direction)) * move_speed
+        player_camera.z = player_model.z
+        player_camera.x = player_model.x
+        player_model.move_speed = move_speed
 
 
 def input(key):
