@@ -7,6 +7,7 @@ from ursina import *
 from ursina.prefabs.first_person_controller import FirstPersonController
 from lang_config import lang_config
 from themes_config import themes
+from maps_ref import map_models
 
 SERVER_HOST = "127.0.0.1"
 SERVER_PORT = 8081
@@ -76,6 +77,7 @@ register_menu = Entity(parent=menus_entity, enabled=False)
 register_success_menu = Entity(parent=menus_entity, enabled=False)
 main_menu = Entity(parent=menus_entity, enabled=False)
 lobby_menu = Entity(parent=menus_entity, enabled=False)
+in_game_menu = Entity(parent=menus_entity, enabled=False)
 settings_menu = Entity(parent=menus_entity, enabled=False)
 video_menu = Entity(parent=menus_entity, enabled=False)
 gameplay_menu = Entity(parent=menus_entity, enabled=False)
@@ -482,6 +484,62 @@ lbl_lobby = Text(
 )
 
 
+# In-Game Menu:
+
+def btn_leave_game_event():
+    packet = {
+        "type": "LEAVE_MAP",
+        "client_id": client_id
+    }
+    print(timenow() + "packet to server: " + json.dumps(packet))
+    network.send(json.dumps(packet).encode("utf-8"))
+    in_game_menu.enabled = False
+    main_menu.enabled = True
+    ground.color = map_models["default"]["GROUND_COLOR"]
+    ground.texture = map_models["default"]["GROUND_TEXTURE"]
+    ground.texture_scale = map_models["default"]["GROUND_TEXTURE_SCALE"]
+
+
+btn_leave_game = Button(
+    text=lang_config[LANGUAGE]["leave_map"],
+    color=themes[THEME]["ui_button"],
+    highlight_color=themes[THEME]["ui_button"],
+    parent=in_game_menu,
+    x=-0.2,
+    y=-0.2,
+    scale_x=themes[THEME]["button_scale_x"],
+    scale_y=themes[THEME]["button_scale_y"]
+)
+btn_leave_game._on_click = btn_leave_game_event
+
+
+def btn_logout_game_event():
+    packet = {
+        "type": "LOGOUT",
+        "client_id": client_id
+    }
+    print(timenow() + "packet to server: " + json.dumps(packet))
+    network.send(json.dumps(packet).encode("utf-8"))
+    in_game_menu.enabled = False
+    init_menu.enabled = True
+    ground.color = map_models["default"]["GROUND_COLOR"]
+    ground.texture = map_models["default"]["GROUND_TEXTURE"]
+    ground.texture_scale = map_models["default"]["GROUND_TEXTURE_SCALE"]
+
+
+btn_logout_game = Button(
+    text=lang_config[LANGUAGE]["logout"],
+    color=themes[THEME]["ui_button"],
+    highlight_color=themes[THEME]["ui_button"],
+    parent=in_game_menu,
+    x=-0.2,
+    y=-0.3,
+    scale_x=themes[THEME]["button_scale_x"],
+    scale_y=themes[THEME]["button_scale_y"]
+)
+btn_logout_game._on_click = btn_logout_game_event
+
+
 def timenow():
     return str(datetime.datetime.now()) + " "
 
@@ -531,15 +589,22 @@ def login_status(status):
     else:
         lbl_login_msg.text = lang_config[LANGUAGE]["invalid_login"]
 
+
 def update_pos(entity_name):
     print("updating entity=" + entity_name)
 
+
 def enter_map(map_name):
     load_map(map_name)
+    in_game_menu.enabled = True
+    lobby_menu.enabled = False
 
 
 def load_map(map_name):
     print("loading map=" + map_name)
+    ground.color = map_models[map_name]["GROUND_COLOR"]
+    ground.texture = map_models[map_name]["GROUND_TEXTURE"]
+    ground.texture_scale = map_models[map_name]["GROUND_TEXTURE_SCALE"]
 
 
 def listen():
@@ -615,9 +680,9 @@ ground = Entity(
     model="plane",
     scale=(100, 1, 100),
     position=(0, 0, 0),
-    color=color.light_gray,
-    texture="white_cube",
-    texture_scale=(100, 100),
+    color=map_models["default"]["GROUND_COLOR"],
+    texture=map_models["default"]["GROUND_TEXTURE"],
+    texture_scale=map_models["default"]["GROUND_TEXTURE_SCALE"],
     collider="box"
 )
 
