@@ -5,6 +5,8 @@ import threading
 from math import radians
 from ursina import *
 from ursina.prefabs.first_person_controller import FirstPersonController
+
+from game_entity import GameEntity
 from lang_config import lang_config
 from themes_config import themes
 from maps_ref import map_models
@@ -35,6 +37,7 @@ window.fps_counter.enabled = False
 
 PACKET_SIZE = 2048
 client_id = 0
+username = None
 
 
 def handle_packet():
@@ -55,7 +58,10 @@ def handle_packet():
             case "REGISTER_STATUS":
                 register_status(packet_data["status"])
             case "LOGIN_STATUS":
-                login_status(packet_data["status"])
+                login_status(
+                    packet_data["status"],
+                    packet_data["username"]
+                )
             case "SERVERS_FULL":
                 lbl_lobby.text = lang_config[LANGUAGE]["servers_full"]
             case "ENTER_MAP":
@@ -73,6 +79,7 @@ def handle_packet():
                     packet_data["entity_name"],
                     packet_data["pos_x"],
                     packet_data["pos_y"],
+                    packet_data["max_health"],
                     packet_data["health"]
                 )
 
@@ -595,12 +602,13 @@ def register_status(status):
         lbl_register_msg.text = lang_config[LANGUAGE]["register_error"]
 
 
-def login_status(status):
+def login_status(status, client_username):
     if status:
         txt_username_login.clear()
         txt_password_login.clear()
         main_menu.enabled = True
         login_menu.enabled = False
+        username = client_username
     else:
         lbl_login_msg.text = lang_config[LANGUAGE]["invalid_login"]
 
@@ -609,10 +617,13 @@ def update_pos(entity_name, pos_x, pos_y, target_x, target_y):
     print("pos entity=" + entity_name)
 
 
-def spawn(entity_name, pos_x, pos_y, health):
-    new_entity = Entity(
-        position_x=pos_x,
-        position_y=pos_y
+def spawn(entity_name, pos_x, pos_y, max_health, health):
+    new_entity = GameEntity(
+        entity_name=entity_name,
+        pos_x=pos_x,
+        pos_y=pos_y,
+        max_health=max_health,
+        health=health
     )
     game_entities["entity_name"] = new_entity
     print("spawn entity=" + entity_name)

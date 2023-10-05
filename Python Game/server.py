@@ -3,9 +3,12 @@ import json
 import datetime
 import random
 import threading
+from server_client import ServerClient
 
 import psycopg2
 from ursina import *
+
+from server_map import ServerMap
 
 IP = "127.0.0.1"
 PORT = 8081
@@ -37,14 +40,14 @@ def process_register(client_id, username, password, email):
             "type": "REGISTER_STATUS",
             "status": True
         }
-        clients[client_id].send(json.dumps(packet).encode("utf-8"))
+        clients[client_id].connection.send(json.dumps(packet).encode("utf-8"))
     except psycopg2.Error as e:
         print(e)
         packet = {
             "type": "REGISTER_STATUS",
             "status": False
         }
-        clients[client_id].send(json.dumps(packet).encode("utf-8"))
+        clients[client_id].connection.send(json.dumps(packet).encode("utf-8"))
     connection.commit()
     cursor.close()
     connection.close()
@@ -80,22 +83,26 @@ def process_login(client_id, username, password):
             cursor.execute(query, values)
             packet = {
                 "type": "LOGIN_STATUS",
-                "status": True
+                "status": True,
+                "username": username
             }
-            clients[client_id].send(json.dumps(packet).encode("utf-8"))
+            clients[client_id].username = username
+            clients[client_id].connection.send(json.dumps(packet).encode("utf-8"))
         except psycopg2.Error as e:
             print(e)
             packet = {
                 "type": "LOGIN_STATUS",
-                "status": False
+                "status": False,
+                "username": None
             }
-            clients[client_id].send(json.dumps(packet).encode("utf-8"))
+            clients[client_id].connection.send(json.dumps(packet).encode("utf-8"))
     else:
         packet = {
             "type": "LOGIN_STATUS",
-            "status": False
+            "status": False,
+            "username": None
         }
-        clients[client_id].send(json.dumps(packet).encode("utf-8"))
+        clients[client_id].connection.send(json.dumps(packet).encode("utf-8"))
     connection.commit()
     cursor.close()
     connection.close()
@@ -115,6 +122,7 @@ def process_logout(client_id):
             int(client_id),
         ]
         cursor.execute(query, values)
+        clients[client_id].username = None
     except psycopg2.Error as e:
         print(e)
     connection.commit()
@@ -142,7 +150,7 @@ def assign_client_id(clients: dict, max_clients: int):
 
 
 def handle_packet(client_id: str):
-    connection = clients[client_id]
+    connection = clients[client_id].connection
     while True:
         try:
             packet = connection.recv(PACKET_SIZE)
@@ -193,44 +201,63 @@ def listen():
 
 
 def check_lobby(client_id):
+    client = clients[client_id]
     servers_full = True
     for map_obj in maps:
-        if not map_obj["is_full"]:
+        if not map_obj.is_full:
             servers_full = False
             packet = {
                 "type": "ENTER_MAP",
-                "map_name": map_obj["map_name"]
+                "map_name": map_obj.map_name
             }
-            clients[client_id].send(json.dumps(packet).encode("utf-8"))
-            print(timenow() + "moving clientID=" + client_id + " into map=" + map_obj["map_name"])
-            spawn_clients(client_id, map_obj)
+            client.connection.send(json.dumps(packet).encode("utf-8"))
+            print(timenow() + "moving clientID=" + client.client_id + " into map=" + map_obj.map_name)
+            map_obj.clients.append(client)
+            spawn_clients(client, map_obj)
             lobby.pop(lobby.index(client_id))
     if servers_full:
         packet = {
             "type": "SERVERS_FULL",
         }
-        clients[client_id].send(json.dumps(packet).encode("utf-8"))
+        client.connection.send(json.dumps(packet).encode("utf-8"))
 
 
-def spawn_clients(client_id, map_obj):
-    for client in map_obj["clients"]:
+def spawn_clients(client, map_obj):
+    # Send spawn packets for all clients already in the room to new client:
+    for otherClient in map_obj.clients:
         packet = {
             "type": "SPAWN",
-            "entity_name": clients[client]
+            "entity_name": otherClient.username,
+            "pos_x": otherClient.pos_x,
+            "pos_y": otherClient.pos_y,
+            "max_health": otherClient.max_health,
+            "health": otherClient.health
         }
-        clients[client_id].send(json.dumps(packet).encode("utf-8"))
+        client.connection.send(json.dumps(packet).encode("utf-8"))
+        # Send spawn packet for new client to all clients already in the room
+        if otherClient.username != client.username:
+            packet = {
+                "type": "SPAWN",
+                "entity_name": client.username,
+                "pos_x": client.pos_x,
+                "pos_y": client.pos_y,
+                "max_health": client.max_health,
+                "health": client.health
+            }
+            otherClient.connection.send(json.dumps(packet).encode("utf-8"))
+
 
 
 def maps_update_loop():
     for map_obj in maps:
-        for client in map_obj["clients"]:
+        for client in map_obj.clients:
             # Send client positions of all clients in the map, including itself
             for otherClient in map_obj.clients:
                 packet = {
                     "type": "POS",
                     "entity_name": otherClient.entity_name
                 }
-                clients[client.client_id].send(json.dumps(packet).encode("utf-8"))
+                client.connection.send(json.dumps(packet).encode("utf-8"))
 
 
 def main():
@@ -251,16 +278,9 @@ def main():
     cursor.close()
     connection.close()
     # Init Maps:
-    new_map = {
-        "map_name": "map1",
-        "clients": [],
-        "size": 1000,
-        "ground": {
-            "texture": "white_cube",
-            "color": color.light_gray
-        },
-        "is_full": False
-    }
+    new_map = ServerMap("map1")
+    new_map.ground_texture = "white_cube"
+    new_map.ground_color = color.light_gray
     maps.append(new_map)
     # Start maps update thread:
     maps_thread = threading.Thread(target=maps_update_loop, daemon=True)
@@ -269,7 +289,7 @@ def main():
         # Listen for new connection and assign client ID:
         connection, address = server_socket.accept()
         client_id = assign_client_id(clients, MAX_CLIENTS)
-        clients[client_id] = connection
+        clients[client_id] = ServerClient(client_id, connection)
         connection.send(client_id.encode("utf8"))
         print(timenow() + "client connected, clientID=" + client_id)
         print(timenow() + str(connection))
