@@ -21,6 +21,12 @@ clients = {}
 lobby = []
 
 
+def send_packet(packet, client):
+    print(timenow() + "packet to clientID=" + client.id + ", packet=" + json.dumps(packet))
+    print(timenow() + str(client.connection))
+    client.connection.send(json.dumps(packet).encode("utf-8"))
+
+
 def process_register(client_id, username, password, email):
     connection = psycopg2.connect(
         host="127.0.0.1",
@@ -42,14 +48,14 @@ def process_register(client_id, username, password, email):
             "type": "REGISTER_STATUS",
             "status": True
         }
-        clients[client_id].connection.send(json.dumps(packet).encode("utf-8"))
+        send_packet(packet, clients[client_id])
     except psycopg2.Error as e:
         print(e)
         packet = {
             "type": "REGISTER_STATUS",
             "status": False
         }
-        clients[client_id].connection.send(json.dumps(packet).encode("utf-8"))
+        send_packet(packet, clients[client_id])
     connection.commit()
     cursor.close()
     connection.close()
@@ -89,7 +95,7 @@ def process_login(client_id, username, password):
                 "username": username
             }
             clients[client_id].username = username
-            clients[client_id].connection.send(json.dumps(packet).encode("utf-8"))
+            send_packet(packet, clients[client_id])
         except psycopg2.Error as e:
             print(e)
             packet = {
@@ -97,14 +103,14 @@ def process_login(client_id, username, password):
                 "status": False,
                 "username": None
             }
-            clients[client_id].connection.send(json.dumps(packet).encode("utf-8"))
+            send_packet(packet, clients[client_id])
     else:
         packet = {
             "type": "LOGIN_STATUS",
             "status": False,
             "username": None
         }
-        clients[client_id].connection.send(json.dumps(packet).encode("utf-8"))
+        send_packet(packet, clients[client_id])
     connection.commit()
     cursor.close()
     connection.close()
@@ -212,7 +218,7 @@ def check_lobby(client_id):
                 "type": "ENTER_MAP",
                 "map_name": map_obj.map_name
             }
-            client.connection.send(json.dumps(packet).encode("utf-8"))
+            send_packet(packet, clients[client_id])
             print(timenow() + "moving clientID=" + client.client_id + " into map=" + map_obj.map_name)
             map_obj.clients.append(client)
             spawn_clients(client, map_obj)
@@ -221,7 +227,7 @@ def check_lobby(client_id):
         packet = {
             "type": "SERVERS_FULL",
         }
-        client.connection.send(json.dumps(packet).encode("utf-8"))
+        send_packet(packet, clients[client_id])
 
 
 def spawn_clients(client, map_obj):
@@ -235,7 +241,7 @@ def spawn_clients(client, map_obj):
             "max_health": otherClient.max_health,
             "health": otherClient.health
         }
-        client.connection.send(json.dumps(packet).encode("utf-8"))
+        send_packet(packet, client)
         # Send spawn packet for new client to all clients already in the room
         if otherClient.username != client.username:
             packet = {
@@ -246,7 +252,7 @@ def spawn_clients(client, map_obj):
                 "max_health": client.max_health,
                 "health": client.health
             }
-            otherClient.connection.send(json.dumps(packet).encode("utf-8"))
+            send_packet(packet, otherClient)
 
 
 def maps_update_loop():
@@ -277,7 +283,7 @@ def maps_update_loop():
                     "target_y": otherClient.target_y,
                     "target_z": otherClient.target_z
                 }
-                client.connection.send(json.dumps(packet).encode("utf-8"))
+                send_packet(packet, otherClient)
 
 
 def main():
@@ -310,7 +316,7 @@ def main():
         connection, address = server_socket.accept()
         client_id = assign_client_id(clients, MAX_CLIENTS)
         clients[client_id] = ServerClient(client_id, connection)
-        connection.send(client_id.encode("utf8"))
+        send_packet(client_id.encode("utf8"), clients[client_id])
         print(timenow() + "client connected, clientID=" + client_id)
         print(timenow() + str(connection))
         try:

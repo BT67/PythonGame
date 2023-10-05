@@ -3,6 +3,8 @@ import json
 import datetime
 import threading
 from math import radians
+
+from pynput.keyboard import Listener
 from ursina import *
 from ursina.prefabs.first_person_controller import FirstPersonController
 
@@ -252,9 +254,7 @@ def btn_login_event():
         "username": txt_username_login.text,
         "password": txt_password_login.text
     }
-    print(timenow() + "packet to server: " + json.dumps(packet))
-    print(timenow() + str(network))
-    network.send(json.dumps(packet).encode("utf-8"))
+    send_packet(packet)
     lbl_register_msg.text = ""
 
 
@@ -362,8 +362,7 @@ def btn_register_event():
         "password": txt_password_register.text,
         "email": txt_email_register.text,
     }
-    print(timenow() + "sending packet to server: " + json.dumps(packet))
-    network.send(json.dumps(packet).encode("utf-8"))
+    send_packet(packet)
     lbl_register_msg.text = ""
 
 
@@ -419,8 +418,7 @@ def btn_battle_main_event():
         "type": "ENTER_LOBBY",
         "client_id": client_id
     }
-    print(timenow() + "packet to server: " + json.dumps(packet))
-    network.send(json.dumps(packet).encode("utf-8"))
+    send_packet(packet)
     lobby_menu.enabled = True
     lbl_lobby.text = ""
     main_menu.enabled = False
@@ -454,8 +452,7 @@ def btn_logout_main_event():
         "type": "LOGOUT",
         "client_id": client_id
     }
-    print(timenow() + "packet to server: " + json.dumps(packet))
-    network.send(json.dumps(packet).encode("utf-8"))
+    send_packet(packet)
     init_menu.enabled = True
     main_menu.enabled = False
 
@@ -480,8 +477,7 @@ def btn_return_lobby_event():
         "type": "LEAVE_LOBBY",
         "client_id": client_id
     }
-    print(timenow() + "packet to server: " + json.dumps(packet))
-    network.send(json.dumps(packet).encode("utf-8"))
+    send_packet(packet)
     main_menu.enabled = True
     lobby_menu.enabled = False
 
@@ -511,8 +507,7 @@ def btn_leave_game_event():
         "type": "LEAVE_MAP",
         "client_id": client_id
     }
-    print(timenow() + "packet to server: " + json.dumps(packet))
-    network.send(json.dumps(packet).encode("utf-8"))
+    send_packet(packet)
     in_game_menu.enabled = False
     main_menu.enabled = True
     in_game = False
@@ -540,8 +535,7 @@ def btn_logout_game_event():
         "type": "LOGOUT",
         "client_id": client_id
     }
-    print(timenow() + "packet to server: " + json.dumps(packet))
-    network.send(json.dumps(packet).encode("utf-8"))
+    send_packet(packet)
     in_game_menu.enabled = False
     init_menu.enabled = True
     ground.color = map_models["default"]["GROUND_COLOR"]
@@ -660,12 +654,54 @@ def main():
 
 def update():
     if in_game:
-        player_camera.rotation_y = player_camera.rotation_y % 360
-        player_model.rotation_y = player_model.rotation_y % 360
+        with Listener(on_press=on_press,on_release=on_release) as listener:
+            listener.join()
         if camera.rotation_x > MAX_LOOK_UP:
             camera.rotation_x = MAX_LOOK_UP
+            player_camera.x = player_model.x
         player_camera.y = player_model.y
+        player_camera.z = player_model.z
 
+
+def on_press(key):
+    if key == Keys["w"] or key == Keys.up_arrow:
+        # Send move forward packet
+        packet = {
+            "type": "POS",
+            "direction": "forward"
+        }
+        send_packet(packet)
+    if key == Keys["s"] or key == Keys.down_arrow:
+        # Send move forward packet
+        packet = {
+            "type": "POS",
+            "direction": "back"
+        }
+        send_packet(packet)
+    if key == Keys["a"] or key == Keys.left_arrow:
+        # Send move forward packet
+        packet = {
+            "type": "POS",
+            "direction": "left"
+        }
+        send_packet(packet)
+    if key == Keys["d"] or key == Keys.right_arrow:
+        # Send move forward packet
+        packet = {
+            "type": "POS",
+            "direction": "right"
+        }
+        send_packet(packet)
+
+
+def on_release(key):
+    if key == Keys["w"] or key == Keys["a"] or key == Keys["a"] or key == Keys["d"] or key == Keys.up_arrow or key == Keys.down_arrow or key == Keys.left_arrow or key == Keys.right_arrow:
+        # Send stop moving packet
+        packet = {
+            "type": "POS",
+            "direction": "stop"
+        }
+        send_packet(packet)
 
 def input(key):
     if key == Keys.scroll_up:
@@ -677,6 +713,10 @@ def input(key):
         if camera.z < MAX_ZOOM_OUT:
             camera.z = MAX_ZOOM_OUT
 
+def send_packet(packet):
+    print(timenow() + "packet to server: " + json.dumps(packet))
+    print(timenow() + str(network))
+    network.send(json.dumps(packet).encode("utf-8"))
 
 ground = Entity(
     model="plane",
