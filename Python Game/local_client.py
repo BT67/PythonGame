@@ -73,8 +73,10 @@ def handle_packet():
                     packet_data["entity_name"],
                     packet_data["pos_x"],
                     packet_data["pos_y"],
+                    packet_data["pos_z"],
                     packet_data["target_x"],
-                    packet_data["target_y"]
+                    packet_data["target_y"],
+                    packet_data["target_z"]
                 )
             case "SPAWN":
                 spawn(
@@ -607,8 +609,13 @@ def login_status(status, client_username):
         lbl_login_msg.text = lang_config[LANGUAGE]["invalid_login"]
 
 
-def update_pos(entity_name, pos_x, pos_y, target_x, target_y):
-    print("pos entity=" + entity_name)
+def update_pos(entity_name, pos_x, pos_y, pos_z, target_x, target_y, target_z):
+    game_entities[entity_name].position_x = pos_x
+    game_entities[entity_name].position_y = pos_y
+    game_entities[entity_name].position_z = pos_z
+    game_entities[entity_name].target_x = target_x
+    game_entities[entity_name].target_y = target_y
+    game_entities[entity_name].target_z = target_z
 
 
 def spawn(entity_name, pos_x, pos_y, max_health, health):
