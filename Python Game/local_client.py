@@ -665,41 +665,6 @@ def update():
         if camera.rotation_x > MAX_LOOK_UP:
             camera.rotation_x = MAX_LOOK_UP
         player_camera.y = player_model.y
-        move_speed = player_model.move_speed
-        move_speed -= MOVE_SPEED_DECC
-        move_direction = player_model.rotation_y
-        if move_speed <= 0:
-            move_speed = 0
-            player_model.reverse = 0
-        if held_keys['w'] | held_keys['up arrow']:
-            move_speed += MOVE_SPEED_ACC
-            player_model.reverse = 0
-        if held_keys['a'] | held_keys['left arrow']:
-            if player_model.reverse:
-                player_model.pivot_y = - 3
-                player_model.rotation_y += TURN_SPEED
-            else:
-                player_model.pivot_y = 3
-                player_model.rotation_y -= TURN_SPEED
-        if held_keys['s'] | held_keys['down arrow']:
-            player_model.reverse = 1
-            move_speed += MOVE_SPEED_ACC
-        if held_keys['d'] | held_keys['right arrow']:
-            if player_model.reverse:
-                player_model.pivot_y = 3
-                player_model.rotation_y -= TURN_SPEED
-            else:
-                player_model.pivot_y = - 3
-                player_model.rotation_y += TURN_SPEED
-        if move_speed > MAX_SPEED:
-            move_speed = MAX_SPEED
-        if player_model.reverse:
-            move_direction = 180 + player_model.rotation_y
-        # player_model.z += cos(radians(move_direction)) * move_speed
-        # player_model.x += sin(radians(move_direction)) * move_speed
-        player_camera.z = player_model.z
-        player_camera.x = player_model.x
-        player_model.move_speed = move_speed
 
 
 def input(key):

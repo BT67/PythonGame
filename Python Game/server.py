@@ -3,6 +3,8 @@ import json
 import datetime
 import random
 import threading
+from math import radians
+
 from server_client import ServerClient
 
 import psycopg2
@@ -247,15 +249,33 @@ def spawn_clients(client, map_obj):
             otherClient.connection.send(json.dumps(packet).encode("utf-8"))
 
 
-
 def maps_update_loop():
     for map_obj in maps:
         for client in map_obj.clients:
+            move_speed = client.move_speed
+            move_speed -= client.drag
+            move_direction = client.rotation_y
+            if move_speed <= 0:
+                move_speed = 0
+                client.reverse = 0
+            if move_speed > client.max_speed:
+                move_speed = client.max_speed
+            if client.reverse:
+                move_direction = 180 + client.rotation_y
+            client.pos_x += sin(radians(move_direction)) * move_speed
+            # client.pos_y = Calculate gravity effect if entity is off the ground
+            client.pos_z += cos(radians(move_direction)) * move_speed
             # Send client positions of all clients in the map, including itself
             for otherClient in map_obj.clients:
                 packet = {
                     "type": "POS",
-                    "entity_name": otherClient.entity_name
+                    "entity_name": otherClient.entity_name,
+                    "pos_x": otherClient.pos_x,
+                    "pos_y": otherClient.pos_y,
+                    "pos_z": otherClient.pos_z,
+                    "target_x": otherClient.target_x,
+                    "target_y": otherClient.target_y,
+                    "target_z": otherClient.target_z
                 }
                 client.connection.send(json.dumps(packet).encode("utf-8"))
 
