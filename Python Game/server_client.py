@@ -18,11 +18,16 @@ class ServerClient:
         self.attack_damage = None
         self.move_speed = None
         self.acceleration = None
+        self.power = None
         self.drag = None
         self.rotation_x = None
         self.rotation_y = None
         self.rotation_z = None
         self.max_speed = None
         self.reverse = False
+        self.turning_left = False
+        self.turning_right = False
+        self.moving_forward = False
+        self.moving_backward = False
 
 

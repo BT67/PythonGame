@@ -146,6 +146,26 @@ def process_leave_lobby(client_id):
     lobby.pop(lobby.index(client_id))
 
 
+def process_pos(client_id, direction):
+    match direction:
+        case "forward":
+            clients[client_id].moving_forward = True
+        case "backward":
+            clients[client_id].moving_backward = True
+        case "left":
+            clients[client_id].turning_left = True
+        case "right":
+            clients[client_id].turning_right = True
+        case "forward_stop":
+            clients[client_id].moving_forward = False
+        case "backward_stop":
+            clients[client_id].moving_backward = False
+        case "left_stop":
+            clients[client_id].moving_forward = False
+        case "right_stop":
+            clients[client_id].moving_forward = False
+
+
 def timenow():
     return str(datetime.datetime.now()) + " "
 
@@ -169,9 +189,6 @@ def handle_packet(client_id: str):
             break
         packet_data = packet.decode("utf8")
         try:
-            # packet_start_index = packet_data.index("{")
-            # packet_end_index = packet_data.index("}") + 1
-            # packet_data = packet_data[packet_start_index:packet_end_index]
             packet_data = json.loads(packet_data)
             print(timenow() + "packet from clientID={client_id}, packet data=" + str(packet_data))
             match packet_data["type"]:
@@ -188,6 +205,8 @@ def handle_packet(client_id: str):
                     check_lobby(packet_data["client_id"])
                 case "LEAVE_LOBBY":
                     process_leave_lobby(packet_data["client_id"])
+                case "POS":
+                    process_pos(packet_data["client_id"], packet_data["direction"])
         except Exception as e:
             print(e)
 

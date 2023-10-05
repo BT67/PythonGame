@@ -654,7 +654,7 @@ def main():
 
 def update():
     if in_game:
-        with Listener(on_press=on_press,on_release=on_release) as listener:
+        with Listener(on_press=on_press, on_release=on_release) as listener:
             listener.join()
         if camera.rotation_x > MAX_LOOK_UP:
             camera.rotation_x = MAX_LOOK_UP
@@ -665,28 +665,24 @@ def update():
 
 def on_press(key):
     if key == Keys["w"] or key == Keys.up_arrow:
-        # Send move forward packet
         packet = {
             "type": "POS",
             "direction": "forward"
         }
         send_packet(packet)
     if key == Keys["s"] or key == Keys.down_arrow:
-        # Send move forward packet
         packet = {
             "type": "POS",
             "direction": "back"
         }
         send_packet(packet)
     if key == Keys["a"] or key == Keys.left_arrow:
-        # Send move forward packet
         packet = {
             "type": "POS",
             "direction": "left"
         }
         send_packet(packet)
     if key == Keys["d"] or key == Keys.right_arrow:
-        # Send move forward packet
         packet = {
             "type": "POS",
             "direction": "right"
@@ -695,13 +691,31 @@ def on_press(key):
 
 
 def on_release(key):
-    if key == Keys["w"] or key == Keys["a"] or key == Keys["a"] or key == Keys["d"] or key == Keys.up_arrow or key == Keys.down_arrow or key == Keys.left_arrow or key == Keys.right_arrow:
-        # Send stop moving packet
+    if key == Keys["w"] or key == Keys.up_arrow:
         packet = {
             "type": "POS",
-            "direction": "stop"
+            "direction": "forward_stop"
         }
         send_packet(packet)
+    if key == Keys["s"] or key == Keys.down_arrow:
+        packet = {
+            "type": "POS",
+            "direction": "backward_stop"
+        }
+        send_packet(packet)
+    if key == Keys["a"] or key == Keys.left_arrow:
+        packet = {
+            "type": "POS",
+            "direction": "left_stop"
+        }
+        send_packet(packet)
+    if key == Keys["d"] or key == Keys.right_arrow:
+        packet = {
+            "type": "POS",
+            "direction": "right_stop"
+        }
+        send_packet(packet)
+
 
 def input(key):
     if key == Keys.scroll_up:
@@ -713,10 +727,12 @@ def input(key):
         if camera.z < MAX_ZOOM_OUT:
             camera.z = MAX_ZOOM_OUT
 
+
 def send_packet(packet):
     print(timenow() + "packet to server: " + json.dumps(packet))
     print(timenow() + str(network))
     network.send(json.dumps(packet).encode("utf-8"))
+
 
 ground = Entity(
     model="plane",
