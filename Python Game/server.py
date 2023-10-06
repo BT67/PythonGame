@@ -22,7 +22,7 @@ lobby = []
 
 
 def send_packet(packet, client):
-    print(timenow() + "packet to clientID=" + client.id + ", packet=" + json.dumps(packet))
+    print(timenow() + "packet to clientID=" + client.client_id + ", packet=" + json.dumps(packet))
     print(timenow() + str(client.connection))
     client.connection.send(json.dumps(packet).encode("utf-8"))
 
@@ -335,7 +335,7 @@ def main():
         connection, address = server_socket.accept()
         client_id = assign_client_id(clients, MAX_CLIENTS)
         clients[client_id] = ServerClient(client_id, connection)
-        send_packet(client_id.encode("utf8"), clients[client_id])
+        clients[client_id].connection.send(client_id.encode("utf8"))
         print(timenow() + "client connected, clientID=" + client_id)
         print(timenow() + str(connection))
         try:

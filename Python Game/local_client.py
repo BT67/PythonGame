@@ -27,6 +27,8 @@ MAX_LOOK_UP = 45
 LANGUAGE = "english"
 THEME = "default"
 in_game = False
+PACKET_SIZE = 2048
+client_id = 0
 game_entities = {}
 
 app = Ursina()
@@ -34,12 +36,6 @@ app = Ursina()
 Sky()
 
 window.fps_counter.enabled = False
-
-# Server Connection:
-
-PACKET_SIZE = 2048
-client_id = 0
-username = None
 
 
 def handle_packet():
@@ -52,9 +48,6 @@ def handle_packet():
         return None
     packet_data = packet.decode("utf8")
     try:
-        # packet_start_index = packet_data.index("{")
-        # packet_end_index = packet_data.index("}") + 1
-        # packet_data = packet_data[packet_start_index:packet_end_index]
         packet_data = json.loads(packet_data)
         match packet_data["type"]:
             case "REGISTER_STATUS":
@@ -413,7 +406,7 @@ btn_back_register_success = Button(
 btn_back_register_success.on_click = btn_back_event
 
 
-# Main Menu
+# Main Menu:
 
 def btn_battle_main_event():
     packet = {
@@ -454,10 +447,10 @@ def btn_logout_main_event():
         "type": "LOGOUT",
         "client_id": client_id
     }
+    lbl_username_main.text = None
     send_packet(packet)
     init_menu.enabled = True
     main_menu.enabled = False
-
 
 btn_logout_main = Button(
     text=lang_config[LANGUAGE]["logout"],
@@ -471,6 +464,12 @@ btn_logout_main = Button(
 )
 btn_logout_main._on_click = btn_logout_main_event
 
+lbl_username_main = Text(
+    text=None,
+    x=0.5,
+    y=0.5,
+    parent=main_menu
+)
 
 # Lobby Menu:
 
@@ -514,6 +513,8 @@ def btn_leave_game_event():
     main_menu.enabled = True
     in_game = False
     game_entities = {}
+    player_model.enabled = False
+    player_camera.enabled = False
     ground.color = map_models["default"]["GROUND_COLOR"]
     ground.texture = map_models["default"]["GROUND_TEXTURE"]
     ground.texture_scale = map_models["default"]["GROUND_TEXTURE_SCALE"]
@@ -540,6 +541,8 @@ def btn_logout_game_event():
     send_packet(packet)
     in_game_menu.enabled = False
     init_menu.enabled = True
+    player_model.enabled = False
+    player_camera.enabled = False
     ground.color = map_models["default"]["GROUND_COLOR"]
     ground.texture = map_models["default"]["GROUND_TEXTURE"]
     ground.texture_scale = map_models["default"]["GROUND_TEXTURE_SCALE"]
@@ -604,7 +607,7 @@ def login_status(status, client_username):
         txt_password_login.clear()
         main_menu.enabled = True
         login_menu.enabled = False
-        username = client_username
+        lbl_username_main.text = client_username
     else:
         lbl_login_msg.text = lang_config[LANGUAGE]["invalid_login"]
 
@@ -619,14 +622,19 @@ def update_pos(entity_name, pos_x, pos_y, pos_z, target_x, target_y, target_z):
 
 
 def spawn(entity_name, pos_x, pos_y, max_health, health):
-    new_entity = GameEntity(
-        entity_name=entity_name,
-        pos_x=pos_x,
-        pos_y=pos_y,
-        max_health=max_health,
-        health=health
-    )
-    game_entities["entity_name"] = new_entity
+    print("logged in as user=" + str(lbl_username_main.text))
+    if entity_name == lbl_username_main.text:
+        player_model.enabled = True
+        player_camera.enabled = True
+    else:
+        new_entity = GameEntity(
+            entity_name=entity_name,
+            pos_x=pos_x,
+            pos_y=pos_y,
+            max_health=max_health,
+            health=health
+        )
+        game_entities["entity_name"] = new_entity
     print("spawn entity=" + entity_name)
 
 
@@ -668,6 +676,10 @@ def update():
             player_camera.x = player_model.x
         player_camera.y = player_model.y
         player_camera.z = player_model.z
+        # Update positions of game entities:
+        for entity in game_entities:
+            x = 0
+
 
 
 def on_press(key):
@@ -725,14 +737,15 @@ def on_release(key):
 
 
 def input(key):
-    if key == Keys.scroll_up:
-        camera.z += ZOOM_SPEED
-        if camera.z > MAX_ZOOM_IN:
-            camera.z = MAX_ZOOM_IN
-    if key == Keys.scroll_down:
-        camera.z -= ZOOM_SPEED
-        if camera.z < MAX_ZOOM_OUT:
-            camera.z = MAX_ZOOM_OUT
+    if in_game:
+        if key == Keys.scroll_up:
+            camera.z += ZOOM_SPEED
+            if camera.z > MAX_ZOOM_IN:
+                camera.z = MAX_ZOOM_IN
+        if key == Keys.scroll_down:
+            camera.z -= ZOOM_SPEED
+            if camera.z < MAX_ZOOM_OUT:
+                camera.z = MAX_ZOOM_OUT
 
 
 def send_packet(packet):
@@ -759,7 +772,6 @@ player_camera = FirstPersonController(
     speed=1
 )
 
-# z=8,
 player_model = Entity(
     model="tier1.fbx",
     y=0.01,

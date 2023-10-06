@@ -21,7 +21,8 @@ en = {
     "battle": "BATTLE",
     "waiting_lobby": "Searching for games...",
     "servers_full": "Game Servers are Currently Full",
-    "leave_map": "LEAVE GAME"
+    "leave_map": "LEAVE GAME",
+    "logged_in_as": "Logged in as: "
 }
 
 lang_config["english"] = en
