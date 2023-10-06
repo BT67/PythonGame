@@ -26,7 +26,6 @@ MAX_SPEED = 0.035
 MAX_LOOK_UP = 45
 LANGUAGE = "english"
 THEME = "default"
-in_game = False
 PACKET_SIZE = 2048
 client_id = 0
 game_entities = {}
@@ -102,6 +101,7 @@ audio_menu = Entity(parent=menus_entity, enabled=False)
 controls_menu = Entity(parent=menus_entity, enabled=False)
 pause_menu = Entity(parent=menus_entity, enabled=False)
 quit_menu = Entity(parent=menus_entity, enabled=False)
+hud = Entity(parent=menus_entity, enabled=False)
 
 menus = [
     init_menu,
@@ -452,6 +452,7 @@ def btn_logout_main_event():
     init_menu.enabled = True
     main_menu.enabled = False
 
+
 btn_logout_main = Button(
     text=lang_config[LANGUAGE]["logout"],
     color=themes[THEME]["ui_button"],
@@ -511,8 +512,7 @@ def btn_leave_game_event():
     send_packet(packet)
     in_game_menu.enabled = False
     main_menu.enabled = True
-    in_game = False
-    game_entities = {}
+    hud.enabled = False
     player_model.enabled = False
     player_camera.enabled = False
     ground.color = map_models["default"]["GROUND_COLOR"]
@@ -541,6 +541,7 @@ def btn_logout_game_event():
     send_packet(packet)
     in_game_menu.enabled = False
     init_menu.enabled = True
+    hud.enabled = False
     player_model.enabled = False
     player_camera.enabled = False
     ground.color = map_models["default"]["GROUND_COLOR"]
@@ -626,6 +627,7 @@ def spawn(entity_name, pos_x, pos_y, max_health, health):
     if entity_name == lbl_username_main.text:
         player_model.enabled = True
         player_camera.enabled = True
+        game_entities[lbl_username_main.text] = player_model
     else:
         new_entity = GameEntity(
             entity_name=entity_name,
@@ -639,7 +641,7 @@ def spawn(entity_name, pos_x, pos_y, max_health, health):
 
 
 def enter_map(map_name):
-    in_game = True
+    hud.enabled = True
     load_map(map_name)
     in_game_menu.enabled = True
     lobby_menu.enabled = False
@@ -668,7 +670,7 @@ def main():
 
 
 def update():
-    if in_game:
+    if hud.enabled:
         with Listener(on_press=on_press, on_release=on_release) as listener:
             listener.join()
         if camera.rotation_x > MAX_LOOK_UP:
@@ -679,7 +681,6 @@ def update():
         # Update positions of game entities:
         for entity in game_entities:
             x = 0
-
 
 
 def on_press(key):
@@ -737,7 +738,7 @@ def on_release(key):
 
 
 def input(key):
-    if in_game:
+    if hud.enabled:
         if key == Keys.scroll_up:
             camera.z += ZOOM_SPEED
             if camera.z > MAX_ZOOM_IN:
