@@ -4,6 +4,7 @@ from ursina import Entity
 
 class ClientMap(Entity):
     def __init__(self, map_name):
+        super().__init__()
         self.map_name = map_name
         self.clients = []
         self.size = 1000
